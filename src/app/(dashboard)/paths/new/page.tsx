@@ -40,8 +40,16 @@ export default function NewPathPage() {
   const [error, setError] = useState('');
 
   const [phases, setPhases] = useState<Phase[]>([]);
+  // expandedPhases = 节点数据缓存（展开后永久保留，不清除）
   const [expandedPhases, setExpandedPhases] = useState<Record<string, TreeNode[]>>({});
+  // visibleExpanded = 当前展开可见的阶段 id 集合
+  const [visibleExpanded, setVisibleExpanded] = useState<Set<string>>(new Set());
   const [expandingPhase, setExpandingPhase] = useState<string | null>(null);
+
+  // 节点展开进度条
+  const [nodeProgress, setNodeProgress] = useState(0);
+  const [nodeProgressStatus, setNodeProgressStatus] = useState('');
+  const nodeProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 进度条状态
   const [progress, setProgress] = useState(0);
@@ -80,6 +88,33 @@ export default function NewPathPage() {
     setProgressStatus('完成！');
   }, []);
 
+  const startNodeProgress = useCallback(() => {
+    setNodeProgress(0);
+    setNodeProgressStatus('正在生成子节点...');
+    const steps = [
+      { at: 600,  to: 25, status: '正在分析知识点...' },
+      { at: 1200, to: 50, status: '正在规划学习顺序...' },
+      { at: 2000, to: 75, status: '正在编写验收标准...' },
+      { at: 2800, to: 90, status: '即将完成...' },
+    ];
+    const startTime = Date.now();
+    nodeProgressTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const step = steps.find(s => elapsed < s.at) ?? { to: 92, status: '正在整理结果...' };
+      setNodeProgress(step.to);
+      setNodeProgressStatus(step.status);
+    }, 200);
+  }, []);
+
+  const finishNodeProgress = useCallback(() => {
+    if (nodeProgressTimerRef.current) {
+      clearInterval(nodeProgressTimerRef.current);
+      nodeProgressTimerRef.current = null;
+    }
+    setNodeProgress(100);
+    setNodeProgressStatus('完成！');
+  }, []);
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -91,6 +126,9 @@ export default function NewPathPage() {
   const handleGenerateFramework = async () => {
     setError('');
     setLoading(true);
+    // 重新生成时清空节点缓存
+    setExpandedPhases({});
+    setVisibleExpanded(new Set());
     startProgress();
     try {
       const res = await fetch('/api/paths/generate/framework', {
@@ -141,8 +179,15 @@ export default function NewPathPage() {
   };
 
   const handleExpandPhase = async (phaseId: string, phaseTitle: string) => {
+    // 缓存命中：直接展开，无需请求
+    if (expandedPhases[phaseId]) {
+      setVisibleExpanded((prev) => new Set(prev).add(phaseId));
+      return;
+    }
+
     setExpandingPhase(phaseId);
     setError('');
+    startNodeProgress();
     try {
       const res = await fetch('/api/paths/generate/nodes', {
         method: 'POST',
@@ -162,9 +207,13 @@ export default function NewPathPage() {
         throw new Error(data.error || '展开失败');
       }
       const data = await res.json();
+      // 写入缓存 + 设为可见
       setExpandedPhases((prev) => ({ ...prev, [phaseId]: data.nodes || [] }));
+      setVisibleExpanded((prev) => new Set(prev).add(phaseId));
+      finishNodeProgress();
     } catch (err) {
       setError(err instanceof Error ? err.message : '展开失败');
+      finishNodeProgress();
     } finally {
       setExpandingPhase(null);
     }
@@ -345,7 +394,7 @@ export default function NewPathPage() {
                   </div>
 
                   {/* Expanded children */}
-                  {expandedPhases[phase.id] && (
+                  {visibleExpanded.has(phase.id) && expandedPhases[phase.id] && (
                     <div className="mt-3 ml-4 border-l-2 border-indigo-100 pl-4 space-y-2">
                       {expandedPhases[phase.id].map((node) => (
                         <div key={node.id} className="text-sm">
@@ -367,21 +416,34 @@ export default function NewPathPage() {
                     </div>
                   )}
 
-                  {/* Expand button or loading */}
-                  {!expandedPhases[phase.id] ? (
+                  {/* 展开中进度条 */}
+                  {expandingPhase === phase.id && (
+                    <div className="mt-3 bg-indigo-50 rounded-lg p-3">
+                      <ProgressBar progress={nodeProgress} status={nodeProgressStatus} />
+                    </div>
+                  )}
+
+                  {/* Expand button or collapse */}
+                  {!visibleExpanded.has(phase.id) ? (
                     <button
                       onClick={() => handleExpandPhase(phase.id, phase.title)}
                       disabled={expandingPhase === phase.id}
                       className="mt-3 text-sm text-indigo-600 hover:text-indigo-500 font-medium"
                     >
-                      {expandingPhase === phase.id ? '展开中...' : '+ 展开子节点'}
+                      {expandingPhase === phase.id
+                        ? '⏳ AI 正在生成子节点...'
+                        : expandedPhases[phase.id]
+                          ? '+ 展开子节点（已缓存）'
+                          : '+ 展开子节点'}
                     </button>
                   ) : (
                     <button
                       onClick={() => {
-                        const next = { ...expandedPhases };
-                        delete next[phase.id];
-                        setExpandedPhases(next);
+                        setVisibleExpanded((prev) => {
+                          const next = new Set(prev);
+                          next.delete(phase.id);
+                          return next;
+                        });
                       }}
                       className="mt-3 text-sm text-gray-400 hover:text-gray-600"
                     >
