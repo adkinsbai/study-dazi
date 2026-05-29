@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth';
 
 function VerifyForm() {
@@ -102,6 +103,12 @@ function VerifyForm() {
       >
         {loading ? '验证中...' : '验证'}
       </button>
+
+      <div className="text-center space-y-2">
+        <Link href="/register" className="text-sm text-gray-400 hover:text-gray-600 underline">
+          ← 返回上一步
+        </Link>
+      </div>
 
       <div className="text-center">
         {countdown > 0 ? (
