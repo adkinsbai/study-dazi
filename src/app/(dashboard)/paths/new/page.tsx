@@ -43,8 +43,11 @@ export default function NewPathPage() {
   const [expandingPhase, setExpandingPhase] = useState<string | null>(null);
 
   if (!user) {
-    router.push('/login');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-400">加载中...</p>
+      </div>
+    );
   }
 
   const handleGenerateFramework = async () => {
@@ -69,7 +72,12 @@ export default function NewPathPage() {
         throw new Error(data.error || '生成失败');
       }
       const data = await res.json();
-      setPhases(data.phases || []);
+      // DeepSeek 可能返回数字 id，统一转字符串
+      const phases = (data.phases || []).map((p: Record<string, unknown>) => ({
+        ...p,
+        id: String(p.id),
+      }));
+      setPhases(phases);
       setStep('framework');
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
