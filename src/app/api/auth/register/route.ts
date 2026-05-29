@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { verifyCodeStore } from '@/lib/verify-code-store';
 import { sendVerificationCode } from '@/lib/email';
 
 const RegisterSchema = z.object({
@@ -24,22 +23,39 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(body.password, 12);
-    const code = verifyCodeStore.generate(body.email, passwordHash);
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const username = body.email.split('@')[0];
 
-    // 尝试发邮件；如果没配 Resend 或发送失败，则返回验证码让页面显示
+    // 新建或更新未验证用户，验证码存入 DB
+    await prisma.user.upsert({
+      where: { email: body.email },
+      update: {
+        passwordHash,
+        verificationCode: code,
+        verificationCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        verificationAttempts: 0,
+      },
+      create: {
+        email: body.email,
+        username,
+        passwordHash,
+        emailVerified: false,
+        verificationCode: code,
+        verificationCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
     let emailSent = false;
     try {
       await sendVerificationCode(body.email, code);
       emailSent = true;
     } catch {
-      // Resend 发送失败（如域名未验证），降级为页面显示验证码
+      // Resend 失败则降级为页面显示
     }
 
     return NextResponse.json({
       success: true,
-      message: emailSent
-        ? `验证码已发送至 ${body.email}`
-        : `验证码：${code}`,
+      message: emailSent ? `验证码已发送至 ${body.email}` : `验证码：${code}`,
       code: emailSent ? undefined : code,
     });
   } catch (err) {

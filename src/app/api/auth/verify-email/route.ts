@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { verifyCodeStore } from '@/lib/verify-code-store';
 import { signAccessToken, signRefreshToken } from '@/lib/auth';
 
 const VerifySchema = z.object({
@@ -14,34 +13,60 @@ export async function POST(req: NextRequest) {
   try {
     const body = VerifySchema.parse(await req.json());
 
-    // 先取密码哈希，再校验验证码（校验成功会删除 Map 条目）
-    const passwordHash = verifyCodeStore.getPasswordHash(body.email);
-    if (!passwordHash) {
+    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    if (!user) {
       return NextResponse.json({ error: '请先注册再验证' }, { status: 400 });
     }
-
-    if (!verifyCodeStore.verify(body.email, body.code)) {
-      return NextResponse.json({ error: '验证码错误或已过期' }, { status: 400 });
+    if (user.emailVerified) {
+      return NextResponse.json({ error: '该邮箱已验证' }, { status: 400 });
     }
 
-    const username = body.email.split('@')[0];
+    // 检查验证码过期
+    if (!user.verificationCodeExpiresAt || new Date() > user.verificationCodeExpiresAt) {
+      return NextResponse.json({ error: '验证码已过期，请重新注册' }, { status: 400 });
+    }
 
-    const user = await prisma.user.upsert({
+    // 检查尝试次数
+    if (user.verificationAttempts >= 5) {
+      return NextResponse.json({ error: '验证码错误次数过多，请重新注册' }, { status: 400 });
+    }
+
+    // 验证码不匹配
+    if (user.verificationCode !== body.code) {
+      await prisma.user.update({
+        where: { email: body.email },
+        data: { verificationAttempts: { increment: 1 } },
+      });
+      return NextResponse.json({ error: '验证码错误' }, { status: 400 });
+    }
+
+    // 验证成功
+    const userName = await ensureUniqueUsername(user.username);
+    await prisma.user.update({
       where: { email: body.email },
-      update: { emailVerified: true, passwordHash },
-      create: { username, email: body.email, passwordHash, emailVerified: true },
+      data: {
+        emailVerified: true,
+        username: userName,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      },
     });
+
+    const updatedUser = await prisma.user.findUnique({ where: { email: body.email } });
+    if (!updatedUser) {
+      return NextResponse.json({ error: '用户不存在' }, { status: 500 });
+    }
 
     const accessToken = await signAccessToken({
-      sub: user.id, email: user.email, emailVerified: true,
+      sub: updatedUser.id, email: updatedUser.email, emailVerified: true,
     });
 
-    const refreshToken = await signRefreshToken({ sub: user.id });
+    const refreshToken = await signRefreshToken({ sub: updatedUser.id });
     const tokenHash = await bcrypt.hash(refreshToken, 10);
 
     await prisma.refreshToken.create({
       data: {
-        userId: user.id,
+        userId: updatedUser.id,
         tokenHash,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
@@ -49,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       token: accessToken,
-      user: { id: user.id, username: user.username, email: user.email, emailVerified: true },
+      user: { id: updatedUser.id, username: updatedUser.username, email: updatedUser.email, emailVerified: true },
     });
 
     response.cookies.set('refresh_token', refreshToken, {
@@ -67,4 +92,16 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
+}
+
+// 确保用户名唯一（如果已有同名，加数字后缀）
+async function ensureUniqueUsername(base: string): Promise<string> {
+  const existing = await prisma.user.findUnique({ where: { username: base } });
+  if (!existing) return base;
+  for (let i = 1; i < 100; i++) {
+    const candidate = `${base}${i}`;
+    const taken = await prisma.user.findUnique({ where: { username: candidate } });
+    if (!taken) return candidate;
+  }
+  return `${base}_${Date.now()}`;
 }
