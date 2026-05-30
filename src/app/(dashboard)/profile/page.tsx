@@ -272,7 +272,18 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowEdit(false)}>
           <div className="bg-white rounded-xl p-6 max-w-sm mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold">编辑资料</h3>
-            <input type="text" value={editAvatar} onChange={e => setEditAvatar(e.target.value)} placeholder="头像 URL" className="w-full border rounded-md px-3 py-2 text-sm" />
+            <div className="flex items-center gap-2">
+              <input type="text" value={editAvatar} onChange={e => setEditAvatar(e.target.value)} placeholder="头像 URL" className="flex-1 border rounded-md px-3 py-2 text-sm" />
+              <label className="px-3 py-2 border rounded-md text-sm text-gray-500 hover:text-indigo-600 cursor-pointer">
+                📎 本地上传
+                <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                  const f = e.target.files?.[0]; if (!f) return;
+                  const form = new FormData(); form.append('file', f);
+                  const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+                  if (res.ok) { const d = await res.json(); if (d.url) setEditAvatar(d.url); }
+                }} />
+              </label>
+            </div>
             <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="用户名" className="w-full border rounded-md px-3 py-2 text-sm" />
             <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={2} placeholder="简介" className="w-full border rounded-md px-3 py-2 text-sm resize-none" />
             <div className="flex gap-2">
