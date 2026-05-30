@@ -174,14 +174,14 @@ export default function Home() {
                 <p className="text-sm text-gray-500">我的路径</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">{paths.length}</p>
               </Link>
-              <div className="bg-white rounded-xl shadow-sm p-4">
+              <Link href="/friends" className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
                 <p className="text-sm text-gray-500">好友</p>
-                <p className="text-2xl font-bold text-gray-900">{friendCount}</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4">
+                <p className="text-2xl font-bold text-gray-900 mt-1">{friendCount}</p>
+              </Link>
+              <Link href="/friends" className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
                 <p className="text-sm text-gray-500">搭子</p>
-                <p className="text-2xl font-bold text-gray-900">{buddyCount}</p>
-              </div>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{buddyCount}</p>
+              </Link>
             </div>
 
             {/* 已保存的学习路径 */}
