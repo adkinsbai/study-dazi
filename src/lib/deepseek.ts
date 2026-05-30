@@ -22,7 +22,7 @@ export async function chatWithDeepSeek(
         { role: 'user', content: userMessage },
       ],
       temperature: options?.temperature ?? 0.1,
-      max_tokens: options?.maxTokens ?? 1024,
+      max_tokens: options?.maxTokens ?? 1200,
     }),
   });
 

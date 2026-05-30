@@ -34,8 +34,15 @@ export async function POST(req: NextRequest) {
       body.hours_per_week && `每周投入：${body.hours_per_week}h`,
     ].filter(Boolean).join('\n');
 
-    const response = await chatWithDeepSeek(apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 800 });
-    const result = extractJSON(response);
+    const response = await chatWithDeepSeek(apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 900 });
+    let result: object;
+    try {
+      result = extractJSON(response);
+    } catch (parseErr) {
+      console.error('[Framework] extractJSON failed. Raw response (last 300 chars):',
+        response.slice(-300));
+      throw parseErr;
+    }
 
     // 防御：AI 可能返回裸数组而非 { phases: [...] }，统一归一化
     const normalized = Array.isArray(result) ? { phases: result } : result;

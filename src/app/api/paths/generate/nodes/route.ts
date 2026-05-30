@@ -34,8 +34,15 @@ export async function POST(req: NextRequest) {
       `当前要展开的阶段：${body.phase_id} — ${body.phase_title}`,
     ].join('\n');
 
-    const response = await chatWithDeepSeek(apiKey, NODES_PROMPT, userMsg, { maxTokens: 500 });
-    const result = extractJSON(response);
+    const response = await chatWithDeepSeek(apiKey, NODES_PROMPT, userMsg, { maxTokens: 700 });
+    let result: object;
+    try {
+      result = extractJSON(response);
+    } catch (parseErr) {
+      console.error('[Nodes] extractJSON failed. Raw response (last 300 chars):',
+        response.slice(-300));
+      throw parseErr;
+    }
 
     // 防御：AI 可能返回裸数组而非 { nodes: [...] }，统一归一化
     const normalized = Array.isArray(result) ? { nodes: result } : result;
