@@ -10,38 +10,7 @@ interface PostData {
 }
 
 function RichContent({ text }: { text: string }) {
-  // 裸 URL 正则（排除末尾标点符号和括号）
-  const urlPattern = 'https?:\\/\\/[^\\s<>\"「」『』()（）\\[\\]{}。，,.;;:：!！?？、]+';
-
-  // 先把 [文字](url) 替换为占位符
-  const markdownLinks: { text: string; url: string }[] = [];
-  const withMd = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, u) => {
-    markdownLinks.push({ text: t, url: u });
-    return `%%MDLINK${markdownLinks.length - 1}%%`;
-  });
-
-  // 按占位符和裸 URL 分割（保留分隔符）
-  const splitRe = new RegExp(`(%%MDLINK\\d+%%|${urlPattern})`, 'g');
-  const segments = withMd.split(splitRe);
-
-  return (
-    <span>
-      {segments.map((seg, i) => {
-        if (!seg) return null;
-        // Markdown 链接占位符
-        const md = seg.match(/^%%MDLINK(\d+)%%$/);
-        if (md) {
-          const link = markdownLinks[parseInt(md[1])];
-          return <a key={i} href={link.url} target="_blank" rel="noopener" className="text-indigo-600 underline hover:text-indigo-500">{link.text}</a>;
-        }
-        // 裸 URL
-        if (/^https?:\/\//.test(seg)) {
-          return <a key={i} href={seg} target="_blank" rel="noopener" className="text-indigo-600 underline hover:text-indigo-500">{seg}</a>;
-        }
-        return <span key={i}>{seg}</span>;
-      })}
-    </span>
-  );
+  return <span>{text}</span>;
 }
 
 // 简易 Markdown 渲染
