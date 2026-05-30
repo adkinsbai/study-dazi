@@ -11,15 +11,13 @@ export async function GET(req: NextRequest) {
     const payload = await verifyAccessToken(auth);
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, username: true, email: true, avatarUrl: true, bio: true, deepseekApiKey: true },
+      select: { id: true, username: true, email: true, deepseekApiKey: true },
     });
 
     return NextResponse.json({
       id: user?.id,
       username: user?.username,
       email: user?.email,
-      avatarUrl: user?.avatarUrl,
-      bio: user?.bio,
       deepseekApiKey: !!user?.deepseekApiKey,
     });
   } catch {
@@ -30,8 +28,6 @@ export async function GET(req: NextRequest) {
 const PatchSchema = z.object({
   deepseekApiKey: z.string().optional(),
   username: z.string().min(2).max(30).optional(),
-  avatarUrl: z.string().optional(),
-  bio: z.string().max(200).optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -42,11 +38,9 @@ export async function PATCH(req: NextRequest) {
     const payload = await verifyAccessToken(auth);
     const body = PatchSchema.parse(await req.json());
 
-    const data: Record<string, string | null> = {};
+    const data: Record<string, string> = {};
     if (body.deepseekApiKey !== undefined) data.deepseekApiKey = body.deepseekApiKey;
     if (body.username) data.username = body.username;
-    if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null;
-    if (body.bio !== undefined) data.bio = body.bio || null;
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: '没有要更新的字段' }, { status: 400 });

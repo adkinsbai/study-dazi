@@ -13,8 +13,6 @@ model User {
   email                     String         @unique
   passwordHash              String         @map("password_hash")
   emailVerified             Boolean        @default(false) @map("email_verified")
-  avatarUrl                 String?        @map("avatar_url")
-  bio                       String?        @map("bio")
   deepseekApiKey            String?        @map("deepseek_api_key")
   verificationCode          String?        @map("verification_code")
   verificationCodeExpiresAt DateTime?      @map("verification_code_expires_at")
@@ -25,8 +23,6 @@ model User {
   learningPaths             LearningPath[]
   nodeProgress              UserNodeProgress[]
   checkIns                  CheckIn[]
-  posts                     Post[]
-
   @@map("users")
 }
 
@@ -79,18 +75,6 @@ model CheckIn {
   @@unique([userId, checkInDate])
   @@index([userId, checkInDate])
   @@map("check_ins")
-}
-
-model Post {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  content   String
-  images    Json     @default("[]")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("posts")
 }
 
 model RefreshToken {
