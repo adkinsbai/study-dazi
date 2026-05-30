@@ -10,11 +10,29 @@ interface PostData {
 }
 
 function RichContent({ text }: { text: string }) {
-  const parts = text.split(/(\[.*?\]\(.*?\))/g);
-  return <span>{parts.map((part, i) => {
-    const m = part.match(/^\[(.*?)\]\((.*?)\)$/);
-    return m ? <a key={i} href={m[2]} target="_blank" rel="noopener" className="text-indigo-600 underline hover:text-indigo-500">{m[1]}</a> : <span key={i}>{part}</span>;
-  })}</span>;
+  // 先处理 [text](url)，再处理裸 URL
+  const linked = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '%%LINK%%$1%%URL%%$2%%END%%');
+  const parts = linked.split(/%%(LINK|URL|END)%%/);
+  const result: React.ReactNode[] = [];
+  let i = 0;
+  while (i < parts.length) {
+    if (parts[i] === 'LINK' && parts[i+2] === 'END') {
+      result.push(<a key={i} href={parts[i+1]} target="_blank" rel="noopener" className="text-indigo-600 underline hover:text-indigo-500">{parts[i-1]}</a>);
+      i += 3;
+    } else {
+      // Auto-detect raw URLs in text
+      const text2 = parts[i] || '';
+      const urlRegex = /(https?:\/\/[^\s<>"]+)/g;
+      const subParts = text2.split(urlRegex);
+      const matches = text2.match(urlRegex) || [];
+      subParts.forEach((sp, j) => {
+        if (sp) result.push(<span key={`${i}-${j}`}>{sp}</span>);
+        if (matches[j]) result.push(<a key={`${i}-link-${j}`} href={matches[j]} target="_blank" rel="noopener" className="text-indigo-600 underline hover:text-indigo-500">{matches[j]}</a>);
+      });
+      i++;
+    }
+  }
+  return <span>{result}</span>;
 }
 
 // 简易 Markdown 渲染
