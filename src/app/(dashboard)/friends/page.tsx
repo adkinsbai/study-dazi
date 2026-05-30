@@ -127,12 +127,13 @@ export default function FriendsPage() {
           ) : (
             <div className="space-y-1">
               {friends.map(f => (
-                <div key={f.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-50">
+                <Link key={f.id} href={`/profile/${f.id}`} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-50">
                   <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
                     {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" /> : f.username[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm font-medium flex-1">{f.username}</span>
-                </div>
+                  <span className="text-xs text-gray-300">→</span>
+                </Link>
               ))}
             </div>
           )}

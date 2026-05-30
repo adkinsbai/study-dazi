@@ -19,14 +19,24 @@ export default function Home() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [paths, setPaths] = useState<PathItem[]>([]);
   const [pathsLoading, setPathsLoading] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // 登录后检查是否有 API Key + 加载路径列表
   useEffect(() => {
     if (user) {
       checkApiKey();
       loadPaths();
+      loadPendingCount();
     }
   }, [user]);
+
+  const loadPendingCount = async () => {
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setPendingCount(d.requests?.length || 0); }
+    } catch { /* ignore */ }
+  };
 
   const checkApiKey = async () => {
     try {
@@ -91,7 +101,14 @@ export default function Home() {
               <Link href="/paths/new" className="text-sm text-indigo-600 hover:text-indigo-500">
                 生成路径
               </Link>
-              <Link href="/friends" className="text-sm text-gray-500 hover:text-indigo-600">好友</Link>
+              <Link href="/friends" className="text-sm text-gray-500 hover:text-indigo-600 relative">
+                好友
+                {pendingCount > 0 && (
+                  <span className="absolute -top-2 -right-4 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {pendingCount}
+                  </span>
+                )}
+              </Link>
               <Link href="/profile" className="text-sm text-gray-600 hover:text-indigo-600">
                 {user.username}
               </Link>
