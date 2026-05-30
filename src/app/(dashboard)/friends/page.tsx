@@ -94,7 +94,7 @@ export default function FriendsPage() {
                   <span className="text-sm font-medium flex-1">{u.username}</span>
                   <button onClick={() => handleAdd(u.id)}
                     className="text-xs text-indigo-600 hover:text-indigo-500">+ 添加</button>
-                  <Link href={`/messages?with=${u.id}`} className="text-xs text-gray-400 hover:text-indigo-600">💬</Link>
+                  <Link href={`/messages?with=${u.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
                 </div>
               ))}
             </div>
@@ -139,7 +139,7 @@ export default function FriendsPage() {
                     <span className="text-sm font-medium">{f.username}</span>
                   </Link>
                   <BuddyInviteBtn friendId={f.id} />
-                  <Link href={`/messages?with=${f.id}`} className="text-xs text-gray-400 hover:text-indigo-600">💬</Link>
+                  <Link href={`/messages?with=${f.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
                 </div>
               ))}
             </div>
@@ -158,9 +158,11 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
   const [pathId, setPathId] = useState('');
   const [paths, setPaths] = useState<{ id: string; title: string }[]>([]);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const open = async () => {
-    setShow(true);
+    setShow(true); setError(''); setSuccess(false);
     try {
       const res = await fetch('/api/paths', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setPaths(d.paths || []); }
@@ -168,14 +170,21 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
   };
 
   const handleInvite = async () => {
-    if (!domain) return;
+    if (!domain.trim()) { setError('请填写学习领域'); return; }
+    setError('');
     setSending(true);
     try {
-      const body: Record<string, string> = { toUserId: friendId, domain };
+      const body: Record<string, string> = { toUserId: friendId, domain: domain.trim() };
       if (pathId) body.sharedPathId = pathId;
-      await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-      setShow(false); setDomain(''); setPathId('');
-    } catch { /* ignore */ } finally { setSending(false); }
+      const res = await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      if (res.ok) {
+        setSuccess(true);
+        setTimeout(() => { setShow(false); setDomain(''); setPathId(''); setSuccess(false); }, 800);
+      } else {
+        const d = await res.json();
+        setError(d.error || '邀请失败');
+      }
+    } catch { setError('网络错误'); } finally { setSending(false); }
   };
 
   return (
@@ -185,6 +194,8 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShow(false)}>
           <div className="bg-white rounded-xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-sm">邀请成为搭子</h3>
+            {error && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{error}</p>}
+            {success && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
             <input value={domain} onChange={e => setDomain(e.target.value)} placeholder="学习领域 *" className="w-full border rounded-md px-3 py-2 text-sm" />
             <select value={pathId} onChange={e => setPathId(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm">
               <option value="">选择共享路径（可选）</option>
@@ -192,7 +203,7 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShow(false)} className="flex-1 py-1.5 border rounded-md text-sm">取消</button>
-              <button onClick={handleInvite} disabled={sending} className="flex-1 py-1.5 bg-purple-600 text-white rounded-md text-sm">{sending ? '发送中' : '邀请'}</button>
+              <button onClick={handleInvite} disabled={sending} className="flex-1 py-1.5 bg-purple-600 text-white rounded-md text-sm disabled:opacity-50">{sending ? '发送中' : '邀请'}</button>
             </div>
           </div>
         </div>
@@ -206,8 +217,6 @@ function BuddySection() {
   const token = useAuthStore(s => s.token);
   const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string } }[]>([]);
   const [buddyRequests, setBuddyRequests] = useState<{ id: string; fromUser: { username: string }; domain: string }[]>([]);
-  const [inviteFriend, setInviteFriend] = useState('');
-  const [inviteDomain, setInviteDomain] = useState('');
 
   useEffect(() => { if (token) loadBuddies(); }, [token]);
 
@@ -215,14 +224,6 @@ function BuddySection() {
     try {
       const res = await fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setBuddies(d.buddies || []); setBuddyRequests(d.requests || []); }
-    } catch { /* ignore */ }
-  };
-
-  const handleInvite = async () => {
-    if (!inviteFriend || !inviteDomain) return;
-    try {
-      await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ toUserId: inviteFriend, domain: inviteDomain }) });
-      setInviteFriend(''); setInviteDomain(''); alert('搭子邀请已发送');
     } catch { /* ignore */ }
   };
 
@@ -255,13 +256,6 @@ function BuddySection() {
         </div>
       )}
 
-      <div className="flex gap-1">
-        <input value={inviteFriend} onChange={e => setInviteFriend(e.target.value)} placeholder="好友ID"
-          className="flex-1 border rounded-md px-2 py-1 text-xs" />
-        <input value={inviteDomain} onChange={e => setInviteDomain(e.target.value)} placeholder="领域"
-          className="w-24 border rounded-md px-2 py-1 text-xs" />
-        <button onClick={handleInvite} className="px-2 py-1 bg-purple-600 text-white text-xs rounded-md">邀请搭子</button>
-      </div>
     </div>
   );
 }

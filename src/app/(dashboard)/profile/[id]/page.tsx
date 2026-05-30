@@ -30,7 +30,42 @@ export default function FriendProfilePage() {
   const [resources, setResources] = useState<{ id: string; title: string; url?: string; domain: string; notes?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Buddy invite modal state
+  const [showBuddy, setShowBuddy] = useState(false);
+  const [buddyDomain, setBuddyDomain] = useState('');
+  const [buddyPathId, setBuddyPathId] = useState('');
+  const [buddyPaths, setBuddyPaths] = useState<{ id: string; title: string }[]>([]);
+  const [buddySending, setBuddySending] = useState(false);
+  const [buddyError, setBuddyError] = useState('');
+  const [buddySuccess, setBuddySuccess] = useState(false);
+
   useEffect(() => { if (token && id) loadData(); }, [token, id]);
+
+  const openBuddy = async () => {
+    setShowBuddy(true); setBuddyError(''); setBuddySuccess('');
+    try {
+      const res = await fetch('/api/paths', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setBuddyPaths(d.paths || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleBuddyInvite = async () => {
+    if (!buddyDomain.trim()) { setBuddyError('请填写学习领域'); return; }
+    setBuddyError('');
+    setBuddySending(true);
+    try {
+      const body: Record<string, string> = { toUserId: id as string, domain: buddyDomain.trim() };
+      if (buddyPathId) body.sharedPathId = buddyPathId;
+      const res = await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      if (res.ok) {
+        setBuddySuccess(true);
+        setTimeout(() => { setShowBuddy(false); setBuddyDomain(''); setBuddyPathId(''); setBuddySuccess(false); }, 800);
+      } else {
+        const d = await res.json();
+        setBuddyError(d.error || '邀请失败');
+      }
+    } catch { setBuddyError('网络错误'); } finally { setBuddySending(false); }
+  };
 
   const loadData = async () => {
     try {
@@ -57,12 +92,36 @@ export default function FriendProfilePage() {
             <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-xl shrink-0 overflow-hidden">
               {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" /> : user.username[0]?.toUpperCase()}
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg font-bold">{user.username}</h2>
               {user.bio && <p className="text-sm text-gray-500 mt-0.5">{user.bio}</p>}
             </div>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={openBuddy} className="text-xs px-2 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100">🤝 邀请搭子</button>
+              <Link href={`/messages?with=${user.id}`} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
+            </div>
           </div>
         </div>
+
+        {/* Buddy invite modal */}
+        {showBuddy && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowBuddy(false)}>
+            <div className="bg-white rounded-xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
+              <h3 className="font-semibold text-sm">邀请 {user.username} 成为搭子</h3>
+              {buddyError && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{buddyError}</p>}
+              {buddySuccess && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
+              <input value={buddyDomain} onChange={e => setBuddyDomain(e.target.value)} placeholder="学习领域 *" className="w-full border rounded-md px-3 py-2 text-sm" />
+              <select value={buddyPathId} onChange={e => setBuddyPathId(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm">
+                <option value="">选择共享路径（可选）</option>
+                {buddyPaths.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button onClick={() => setShowBuddy(false)} className="flex-1 py-1.5 border rounded-md text-sm">取消</button>
+                <button onClick={handleBuddyInvite} disabled={buddySending} className="flex-1 py-1.5 bg-purple-600 text-white rounded-md text-sm disabled:opacity-50">{buddySending ? '发送中' : '邀请'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Learning paths */}
         {paths.length > 0 && (

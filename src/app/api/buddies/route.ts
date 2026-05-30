@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
     if (!auth) return NextResponse.json({ error: '请先登录' }, { status: 401 });
     const payload = await verifyAccessToken(auth);
-    const { toUserId, domain } = await req.json();
+    const { toUserId, domain, sharedPathId } = await req.json();
     if (!toUserId || !domain) return NextResponse.json({ error: '参数错误' }, { status: 400 });
 
     const exist = await prisma.studyBuddy.findUnique({
@@ -44,7 +44,9 @@ export async function POST(req: NextRequest) {
     if (exist) return NextResponse.json({ error: '已发送过邀请' }, { status: 400 });
 
     const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
-    await prisma.studyBuddy.create({ data: { fromUserId: payload.sub, toUserId, domain } });
+    const createData: Record<string, unknown> = { fromUserId: payload.sub, toUserId, domain };
+    if (sharedPathId) createData.sharedPathId = sharedPathId;
+    await prisma.studyBuddy.create({ data: createData as any });
     await prisma.notification.create({
       data: { userId: toUserId, type: 'buddy_invite', content: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子`, referenceId: payload.sub },
     });

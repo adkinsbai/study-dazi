@@ -238,6 +238,7 @@ export default function ExplorePage() {
                     {r.description && <p className="text-xs text-gray-500 mt-1">{r.description}</p>}
                     {r.notes && <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap border-l-2 border-amber-200 pl-3">{r.notes.substring(0, 300)}</p>}
                     <p className="text-xs text-gray-400 mt-1">{r.user.username} · {new Date(r.createdAt).toLocaleDateString('zh-CN')}</p>
+                    <InlineComments targetId={r.id} type="resource" />
                   </div>
                 ))}
               </div>
@@ -263,6 +264,7 @@ export default function ExplorePage() {
                       </div>
                       <div className="flex items-center gap-2 mt-2 text-xs text-gray-500"><Link href={`/profile/${t.user.id}`}>{t.user.username}</Link></div>
                       <button onClick={() => handleFork(t.id)} className="mt-3 w-full py-1.5 rounded-md border border-indigo-300 text-sm text-indigo-600 hover:bg-indigo-50">🔀 Fork</button>
+                      <InlineComments targetId={t.id} type="path" />
                     </div>
                   ))}
                 </div>
