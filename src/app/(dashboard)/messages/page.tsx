@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Conv { user: { id: string; username: string; avatarUrl: string | null }; lastMsg: string; time: string; unread: number; }
@@ -10,12 +11,22 @@ interface Msg { id: string; content: string; createdAt: string; fromUser: { user
 export default function MessagesPage() {
   const token = useAuthStore(s => s.token);
   const myId = useAuthStore(s => s.user?.id);
+  const params = useSearchParams();
   const [convs, setConvs] = useState<Conv[]>([]);
   const [chatUser, setChatUser] = useState<{ id: string; username: string } | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
 
   useEffect(() => { if (token) loadConvs(); }, [token]);
+
+  // Auto-open chat from URL ?with=userId
+  useEffect(() => {
+    const withId = params.get('with');
+    if (withId && convs.length > 0) {
+      const conv = convs.find(c => c.user.id === withId);
+      if (conv) openChat(conv.user);
+    }
+  }, [params, convs]);
 
   const loadConvs = async () => {
     const res = await fetch('/api/messages', { headers: { Authorization: `Bearer ${token}` } });

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface ExploreComment { id: string; content: string; createdAt: string; user: { username: string }; }
 type Tab = 'posts' | 'resources' | 'paths';
 
 interface PostItem { id: string; content: string; images: string[]; markdown?: string; createdAt: string;
@@ -182,6 +183,7 @@ export default function ExplorePage() {
                     <p className="text-sm text-gray-800 whitespace-pre-wrap">{p.content}</p>
                     {p.markdown && <div className="mt-2 text-sm text-gray-700 italic border-l-2 border-gray-200 pl-3">{p.markdown.substring(0, 200)}</div>}
                     {p.images?.length > 0 && <div className="mt-2 flex gap-1 flex-wrap">{p.images.slice(0, 6).map((url, i) => <img key={i} src={url} className="w-20 h-20 object-cover rounded" />)}</div>}
+                    <InlineComments targetId={p.id} type="post" />
                   </div>
                 ))}
               </div>
@@ -269,6 +271,54 @@ export default function ExplorePage() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// ─── Inline comments ──────────────────────────────
+function InlineComments({ targetId, type }: { targetId: string; type: string }) {
+  const token = useAuthStore(s => s.token);
+  const [show, setShow] = useState(false);
+  const [comments, setComments] = useState<ExploreComment[]>([]);
+  const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/comments?pathId=explore&nodeId=${type}-${targetId}`);
+      if (res.ok) { const d = await res.json(); setComments(d.comments || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleSubmit = async () => {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    try {
+      await fetch('/api/comments', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pathId: 'explore', nodeId: `${type}-${targetId}`, content: text }),
+      });
+      setText(''); load();
+    } catch { /* ignore */ } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="mt-2 border-t pt-2">
+      <button onClick={() => { setShow(!show); if (!show) load(); }} className="text-xs text-gray-400 hover:text-indigo-600">
+        💬 评论 {comments.length > 0 && `(${comments.length})`}
+      </button>
+      {show && (
+        <div className="mt-2 space-y-2">
+          {comments.map(c => (
+            <div key={c.id} className="text-xs"><span className="font-medium">{c.user.username}</span>: {c.content}</div>
+          ))}
+          <div className="flex gap-1">
+            <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              placeholder="写评论..." className="flex-1 border rounded px-2 py-1 text-xs" />
+            <button onClick={handleSubmit} disabled={submitting} className="px-2 py-1 bg-indigo-600 text-white text-xs rounded">发送</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -94,6 +94,7 @@ export default function FriendsPage() {
                   <span className="text-sm font-medium flex-1">{u.username}</span>
                   <button onClick={() => handleAdd(u.id)}
                     className="text-xs text-indigo-600 hover:text-indigo-500">+ 添加</button>
+                  <Link href={`/messages?with=${u.id}`} className="text-xs text-gray-400 hover:text-indigo-600">💬</Link>
                 </div>
               ))}
             </div>
@@ -130,19 +131,73 @@ export default function FriendsPage() {
           ) : (
             <div className="space-y-1">
               {friends.map(f => (
-                <Link key={f.id} href={`/profile/${f.id}`} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-50">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
-                    {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" /> : f.username[0]?.toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium flex-1">{f.username}</span>
-                  <span className="text-xs text-gray-300">→</span>
-                </Link>
+                <div key={f.id} className="flex items-center gap-2 py-2 px-2 rounded hover:bg-gray-50">
+                  <Link href={`/profile/${f.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
+                      {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" /> : f.username[0]?.toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium">{f.username}</span>
+                  </Link>
+                  <BuddyInviteBtn friendId={f.id} />
+                  <Link href={`/messages?with=${f.id}`} className="text-xs text-gray-400 hover:text-indigo-600">💬</Link>
+                </div>
               ))}
             </div>
           )}
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── Buddy invite button on each friend ──────────
+function BuddyInviteBtn({ friendId }: { friendId: string }) {
+  const token = useAuthStore(s => s.token);
+  const [show, setShow] = useState(false);
+  const [domain, setDomain] = useState('');
+  const [pathId, setPathId] = useState('');
+  const [paths, setPaths] = useState<{ id: string; title: string }[]>([]);
+  const [sending, setSending] = useState(false);
+
+  const open = async () => {
+    setShow(true);
+    try {
+      const res = await fetch('/api/paths', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setPaths(d.paths || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleInvite = async () => {
+    if (!domain) return;
+    setSending(true);
+    try {
+      const body: Record<string, string> = { toUserId: friendId, domain };
+      if (pathId) body.sharedPathId = pathId;
+      await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      setShow(false); setDomain(''); setPathId('');
+    } catch { /* ignore */ } finally { setSending(false); }
+  };
+
+  return (
+    <>
+      <button onClick={open} className="text-xs text-purple-500 hover:text-purple-700">🤝 搭子</button>
+      {show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShow(false)}>
+          <div className="bg-white rounded-xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold text-sm">邀请成为搭子</h3>
+            <input value={domain} onChange={e => setDomain(e.target.value)} placeholder="学习领域 *" className="w-full border rounded-md px-3 py-2 text-sm" />
+            <select value={pathId} onChange={e => setPathId(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm">
+              <option value="">选择共享路径（可选）</option>
+              {paths.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+            <div className="flex gap-2">
+              <button onClick={() => setShow(false)} className="flex-1 py-1.5 border rounded-md text-sm">取消</button>
+              <button onClick={handleInvite} disabled={sending} className="flex-1 py-1.5 bg-purple-600 text-white rounded-md text-sm">{sending ? '发送中' : '邀请'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
