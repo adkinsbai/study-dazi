@@ -5,6 +5,13 @@ import { verifyAccessToken } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
+    // 返回所有不重复的领域列表
+    if (req.nextUrl.searchParams.get('domains') === '1') {
+      const raw = await prisma.resource.findMany({ select: { domain: true }, distinct: ['domain'], orderBy: { domain: 'asc' } });
+      const domains = raw.map(r => r.domain);
+      return NextResponse.json({ domains });
+    }
+
     const domain = req.nextUrl.searchParams.get('domain') || '';
     const where: Record<string, unknown> = {};
     if (domain) where.domain = domain;

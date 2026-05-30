@@ -14,19 +14,19 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type;
 
-    if (mime.startsWith('image/')) {
-      // 图片 → base64 data URL
+    if (mime.startsWith('image/') || mime === 'application/pdf') {
       const b64 = buffer.toString('base64');
-      return NextResponse.json({ url: `data:${mime};base64,${b64}`, name: file.name, type: 'image' });
+      return NextResponse.json({ url: `data:${mime};base64,${b64}`, name: file.name, type: mime.startsWith('image/') ? 'image' : 'file' });
     }
 
     if (mime === 'text/markdown' || file.name.endsWith('.md')) {
-      // Markdown 文件 → 文本内容
       const text = buffer.toString('utf-8');
       return NextResponse.json({ content: text, name: file.name, type: 'markdown' });
     }
 
-    return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 });
+    // 其他文件类型也支持（base64 存储）
+    const b64 = buffer.toString('base64');
+    return NextResponse.json({ url: `data:${mime};base64,${b64}`, name: file.name, type: 'file' });
   } catch {
     return NextResponse.json({ error: '上传失败' }, { status: 500 });
   }

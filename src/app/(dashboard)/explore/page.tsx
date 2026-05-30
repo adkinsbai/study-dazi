@@ -14,8 +14,6 @@ interface ResourceItem { id: string; title: string; url?: string; fileUrl?: stri
 interface PathItem { id: string; title: string; domain: string; forkCount: number; createdAt: string;
   user: { id: string; username: string; avatarUrl: string | null }; }
 
-const DOMAINS = ['前端开发', '后端开发', 'Python', 'AI/ML', '移动开发', 'UI 设计', '数据分析', 'DevOps'];
-
 export default function ExplorePage() {
   const token = useAuthStore(s => s.token);
   const router = useRouter();
@@ -26,6 +24,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [domain, setDomain] = useState('');
   const [search, setSearch] = useState('');
+  const [suggestedDomains, setSuggestedDomains] = useState<string[]>([]);
 
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [resForm, setResForm] = useState({ title: '', url: '', domain: '', description: '', notes: '', fileUrl: '', fileName: '' });
@@ -34,7 +33,14 @@ export default function ExplorePage() {
   const [resError, setResError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { loadTab('posts'); }, []);
+  useEffect(() => { loadTab('posts'); loadDomains(); }, []);
+
+  const loadDomains = async () => {
+    try {
+      const res = await fetch('/api/resources?domains=1');
+      if (res.ok) { const d = await res.json(); setSuggestedDomains(d.domains || []); }
+    } catch { /* ignore */ }
+  };
 
   const loadTab = async (t: Tab, d = '') => {
     setLoading(true);
@@ -119,12 +125,15 @@ export default function ExplorePage() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex flex-wrap gap-2 mb-4">
-          {DOMAINS.map(d => (
+          {suggestedDomains.map(d => (
             <button key={d} onClick={() => { setDomain(domain === d ? '' : d); loadTab(tab, domain === d ? '' : d); }}
               className={`px-3 py-1 rounded-full text-xs font-medium ${domain === d ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {d}
             </button>
           ))}
+          {suggestedDomains.length === 0 && (
+            <span className="text-xs text-gray-400">分享资源后板块自动出现</span>
+          )}
         </div>
 
         {loading ? <p className="text-center text-gray-400 py-12">加载中...</p> : (
@@ -168,11 +177,12 @@ export default function ExplorePage() {
                         {uploading ? '⏳ 上传中...' : resForm.fileName ? '✅ ' + resForm.fileName : '📎 上传文件'}
                       </button>
                     </div>
-                    <select value={resForm.domain} onChange={e => setResForm(p => ({ ...p, domain: e.target.value }))}
-                      className="w-full border rounded-md px-3 py-2 text-sm">
-                      <option value="">选择领域 *</option>
-                      {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                    <input value={resForm.domain} onChange={e => setResForm(p => ({ ...p, domain: e.target.value }))}
+                      list="domain-suggestions" placeholder="领域/板块 *（可自定义输入）"
+                      className="w-full border rounded-md px-3 py-2 text-sm" />
+                    <datalist id="domain-suggestions">
+                      {suggestedDomains.map(d => <option key={d} value={d} />)}
+                    </datalist>
                     <textarea value={resForm.notes} onChange={e => setResForm(p => ({ ...p, notes: e.target.value }))}
                       placeholder="笔记/说明（可选）" rows={3}
                       className="w-full border rounded-md px-3 py-2 text-sm resize-none" />
