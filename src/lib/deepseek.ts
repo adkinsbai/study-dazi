@@ -13,6 +13,9 @@ export async function chatWithDeepSeek(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
+      // deepseek-chat = deepseek-v4-flash 非推理模式（最快最便宜）
+      // deepseek-reasoner = deepseek-v4-flash 推理模式
+      // deepseek-v4-pro = 旗舰模型（更强但更贵更慢，需要时切换）
       model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
