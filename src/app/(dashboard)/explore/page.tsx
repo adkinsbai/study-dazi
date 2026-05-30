@@ -69,15 +69,23 @@ export default function ExplorePage() {
     if (res.ok) { const d = await res.json(); router.push(`/paths/${d.id}`); }
   };
 
+  const [uploadError, setUploadError] = useState('');
+
   const handleFileUpload = async (file: File) => {
+    setUploadError('');
     setUploading(true);
     try {
       const form = new FormData(); form.append('file', file);
       const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
-      if (res.ok) { const d = await res.json(); setResForm(p => ({ ...p, fileUrl: d.url, fileName: d.name })); }
-      else { alert('上传失败'); }
-    } catch { alert('上传失败'); }
-    finally { setUploading(false); }
+      if (!res.ok) {
+        const d = await res.json().catch(()=>({}));
+        throw new Error(d.error || '上传失败');
+      }
+      const d = await res.json();
+      setResForm(p => ({ ...p, fileUrl: d.url, fileName: d.name }));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '上传失败');
+    } finally { setUploading(false); }
   };
 
   const handleAddResource = async () => {
@@ -162,10 +170,12 @@ export default function ExplorePage() {
 
             {tab === 'resources' && (
               <div className="space-y-4">
-                <button onClick={() => setShowResourceForm(!showResourceForm)} className="text-sm text-indigo-600 hover:text-indigo-500">+ 分享资源</button>
+                <button onClick={() => { setShowResourceForm(!showResourceForm); setUploading(false); setUploadError(''); setResError(''); }}
+                  className="text-sm text-indigo-600 hover:text-indigo-500">+ 分享资源</button>
                 {showResourceForm && (
                   <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
                     {resError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{resError}</p>}
+                    {uploadError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{uploadError}</p>}
                     <input value={resForm.title} onChange={e => setResForm(p => ({ ...p, title: e.target.value }))}
                       placeholder="资源名称 *" className="w-full border rounded-md px-3 py-2 text-sm" />
                     <div className="flex gap-2">

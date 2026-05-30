@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
 export async function POST(req: NextRequest) {
   try {
     const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -10,6 +12,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: '没有文件' }, { status: 400 });
+    if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 5MB' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type;
@@ -24,7 +27,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ content: text, name: file.name, type: 'markdown' });
     }
 
-    // 其他文件类型也支持（base64 存储）
     const b64 = buffer.toString('base64');
     return NextResponse.json({ url: `data:${mime};base64,${b64}`, name: file.name, type: 'file' });
   } catch {
