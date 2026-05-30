@@ -101,6 +101,7 @@ export default function Home() {
               <Link href="/paths/new" className="text-sm text-indigo-600 hover:text-indigo-500">
                 生成路径
               </Link>
+              <Link href="/explore" className="text-sm text-gray-500 hover:text-indigo-600">广场</Link>
               <Link href="/friends" className="text-sm text-gray-500 hover:text-indigo-600 relative">
                 好友
                 {pendingCount > 0 && (

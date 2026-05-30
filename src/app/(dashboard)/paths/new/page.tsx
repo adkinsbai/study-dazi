@@ -39,6 +39,7 @@ export default function NewPathPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [publicTemplate, setPublicTemplate] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
   // expandedPhases = 节点数据缓存（展开后永久保留，不清除）
   const [expandedPhases, setExpandedPhases] = useState<Record<string, TreeNode[]>>({});
@@ -285,6 +286,8 @@ export default function NewPathPage() {
           title: `${domain}学习路径`,
           domain,
           tree_data: tree,
+          isPublic: publicTemplate,
+          isTemplate: publicTemplate,
         }),
       });
       if (!res.ok) {
@@ -500,6 +503,12 @@ export default function NewPathPage() {
                 <ProgressBar progress={progress} status={progressStatus} />
               </div>
             )}
+
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={publicTemplate} onChange={e => setPublicTemplate(e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              公开为模板（其他人可以在广场 Fork）
+            </label>
 
             <div className="flex gap-3 pt-4">
               <button
