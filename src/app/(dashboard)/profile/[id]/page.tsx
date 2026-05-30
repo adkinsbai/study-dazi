@@ -27,6 +27,7 @@ export default function FriendProfilePage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [paths, setPaths] = useState<PathItem[]>([]);
+  const [resources, setResources] = useState<{ id: string; title: string; url?: string; domain: string; notes?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (token && id) loadData(); }, [token, id]);
@@ -34,7 +35,7 @@ export default function FriendProfilePage() {
   const loadData = async () => {
     try {
       const res = await fetch(`/api/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setUser(d.user); setPosts(d.posts || []); setPaths(d.paths || []); }
+      if (res.ok) { const d = await res.json(); setUser(d.user); setPosts(d.posts || []); setPaths(d.paths || []); setResources(d.resources || []); }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
@@ -74,6 +75,24 @@ export default function FriendProfilePage() {
                   <span className="text-sm font-medium">{p.title}</span>
                   <span className="text-xs text-gray-400">{p.domain}</span>
                 </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Resources */}
+        {resources.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">分享的资源 ({resources.length})</h3>
+            <div className="space-y-2">
+              {resources.map(r => (
+                <div key={r.id} className="py-1">
+                  {r.url ? (
+                    <a href={r.url} target="_blank" rel="noopener" className="text-sm font-medium text-indigo-600 hover:underline">{r.title}</a>
+                  ) : <span className="text-sm font-medium">{r.title}</span>}
+                  <span className="ml-2 text-xs bg-gray-100 px-1.5 py-0.5 rounded">{r.domain}</span>
+                  {r.notes && <p className="text-xs text-gray-500 mt-0.5">{r.notes.substring(0, 100)}</p>}
+                </div>
               ))}
             </div>
           </div>
