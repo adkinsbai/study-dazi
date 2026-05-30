@@ -29,6 +29,9 @@ export default function ExplorePage() {
 
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [resForm, setResForm] = useState({ title: '', url: '', domain: '', description: '', notes: '', fileUrl: '', fileName: '' });
+  const [uploading, setUploading] = useState(false);
+  const [resSubmitting, setResSubmitting] = useState(false);
+  const [resError, setResError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadTab('posts'); }, []);
@@ -61,13 +64,20 @@ export default function ExplorePage() {
   };
 
   const handleFileUpload = async (file: File) => {
-    const form = new FormData(); form.append('file', file);
-    const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
-    if (res.ok) { const d = await res.json(); setResForm(p => ({ ...p, fileUrl: d.url, fileName: d.name })); }
+    setUploading(true);
+    try {
+      const form = new FormData(); form.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+      if (res.ok) { const d = await res.json(); setResForm(p => ({ ...p, fileUrl: d.url, fileName: d.name })); }
+      else { alert('上传失败'); }
+    } catch { alert('上传失败'); }
+    finally { setUploading(false); }
   };
 
   const handleAddResource = async () => {
-    if (!resForm.title || !resForm.domain) return;
+    if (!resForm.title || !resForm.domain) { setResError('请填写资源名称和领域'); return; }
+    setResError('');
+    setResSubmitting(true);
     try {
       const body: Record<string, string> = { title: resForm.title, domain: resForm.domain };
       if (resForm.url) body.url = resForm.url;
@@ -78,8 +88,13 @@ export default function ExplorePage() {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-      if (res.ok) { setShowResourceForm(false); setResForm({ title: '', url: '', domain: '', description: '', notes: '', fileUrl: '', fileName: '' }); loadTab('resources', domain); }
-    } catch { /* ignore */ }
+      if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.error || '提交失败'); }
+      setShowResourceForm(false);
+      setResForm({ title: '', url: '', domain: '', description: '', notes: '', fileUrl: '', fileName: '' });
+      loadTab('resources', domain);
+    } catch (err) {
+      setResError(err instanceof Error ? err.message : '提交失败');
+    } finally { setResSubmitting(false); }
   };
 
   return (
@@ -141,15 +156,16 @@ export default function ExplorePage() {
                 <button onClick={() => setShowResourceForm(!showResourceForm)} className="text-sm text-indigo-600 hover:text-indigo-500">+ 分享资源</button>
                 {showResourceForm && (
                   <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
+                    {resError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{resError}</p>}
                     <input value={resForm.title} onChange={e => setResForm(p => ({ ...p, title: e.target.value }))}
                       placeholder="资源名称 *" className="w-full border rounded-md px-3 py-2 text-sm" />
                     <div className="flex gap-2">
                       <input value={resForm.url} onChange={e => setResForm(p => ({ ...p, url: e.target.value }))}
                         placeholder="链接 URL（可选）" className="flex-1 border rounded-md px-3 py-2 text-sm" />
                       <input ref={fileInputRef} type="file" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} className="hidden" />
-                      <button onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-2 border rounded-md text-sm text-gray-500 hover:text-indigo-600">
-                        {resForm.fileName ? '📎 ' + resForm.fileName : '📎 上传文件'}
+                      <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                        className="px-3 py-2 border rounded-md text-sm text-gray-500 hover:text-indigo-600 disabled:opacity-50">
+                        {uploading ? '⏳ 上传中...' : resForm.fileName ? '✅ ' + resForm.fileName : '📎 上传文件'}
                       </button>
                     </div>
                     <select value={resForm.domain} onChange={e => setResForm(p => ({ ...p, domain: e.target.value }))}
@@ -160,7 +176,10 @@ export default function ExplorePage() {
                     <textarea value={resForm.notes} onChange={e => setResForm(p => ({ ...p, notes: e.target.value }))}
                       placeholder="笔记/说明（可选）" rows={3}
                       className="w-full border rounded-md px-3 py-2 text-sm resize-none" />
-                    <button onClick={handleAddResource} className="px-4 py-1.5 rounded-md bg-indigo-600 text-sm text-white">提交</button>
+                    <button onClick={handleAddResource} disabled={resSubmitting}
+                      className="px-4 py-1.5 rounded-md bg-indigo-600 text-sm text-white hover:bg-indigo-500 disabled:opacity-50">
+                      {resSubmitting ? '提交中...' : '提交'}
+                    </button>
                   </div>
                 )}
                 {resources.length === 0 && <p className="text-center text-gray-400 py-8">暂无资源</p>}
