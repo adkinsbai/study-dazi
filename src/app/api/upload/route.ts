@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+// Vercel API body 限制 4.5MB，base64 编码会膨胀 33%
+// 所以实际文件限制 2MB 保证安全
+const MAX_SIZE = 2 * 1024 * 1024; // 2MB
 
 export async function POST(req: NextRequest) {
   try {
