@@ -27,12 +27,20 @@ function MessagesPageInner() {
 
   useEffect(() => { if (token) loadConvs(); }, [token]);
 
-  // Auto-open chat from URL ?with=userId
+  // Auto-open chat from URL ?with=userId (even for new conversations)
   useEffect(() => {
     const withId = params.get('with');
-    if (withId && convs.length > 0) {
-      const conv = convs.find(c => c.user.id === withId);
-      if (conv) openChat(conv.user);
+    if (!withId) return;
+    // Already in a chat with this user
+    if (chatUser?.id === withId) return;
+    // Found in existing conversations
+    const conv = convs.find(c => c.user.id === withId);
+    if (conv) { openChat(conv.user); return; }
+    // New conversation — fetch user info then open
+    if (convs !== undefined) { // convs loaded (could be empty)
+      fetch(`/api/users/${withId}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.user) openChat({ id: d.user.id, username: d.user.username }); });
     }
   }, [params, convs]);
 
