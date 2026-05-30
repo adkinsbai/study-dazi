@@ -20,8 +20,16 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // Load shared path titles
+    const pathIds = [...new Set(active.map(b => b.sharedPathId).filter(Boolean))];
+    const paths = pathIds.length > 0
+      ? await prisma.learningPath.findMany({ where: { id: { in: pathIds as string[] } }, select: { id: true, title: true } })
+      : [];
+    const pathMap = new Map(paths.map(p => [p.id, p.title]));
+
     const buddies = active.map(b => ({
       id: b.id, domain: b.domain, sharedPathId: b.sharedPathId,
+      sharedPathTitle: b.sharedPathId ? (pathMap.get(b.sharedPathId) || null) : null,
       buddy: b.fromUserId === payload.sub ? b.toUser : b.fromUser,
     }));
 
@@ -47,8 +55,9 @@ export async function POST(req: NextRequest) {
     const createData: Record<string, unknown> = { fromUserId: payload.sub, toUserId, domain };
     if (sharedPathId) createData.sharedPathId = sharedPathId;
     await prisma.studyBuddy.create({ data: createData as any });
+    const pathHint = sharedPathId ? '，已附带共享路径' : '';
     await prisma.notification.create({
-      data: { userId: toUserId, type: 'buddy_invite', content: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子`, referenceId: payload.sub },
+      data: { userId: toUserId, type: 'buddy_invite', content: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子${pathHint}。请前往好友页面 → 搭子区域接受`, referenceId: payload.sub },
     });
     return NextResponse.json({ success: true }, { status: 201 });
   } catch { return NextResponse.json({ error: '服务器错误' }, { status: 500 }); }

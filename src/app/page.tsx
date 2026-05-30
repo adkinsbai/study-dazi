@@ -21,6 +21,8 @@ export default function Home() {
   const [pathsLoading, setPathsLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [friendCount, setFriendCount] = useState(0);
+  const [buddyCount, setBuddyCount] = useState(0);
+  const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string }; sharedPathId?: string | null; sharedPathTitle?: string | null }[]>([]);
   const [notifCount, setNotifCount] = useState(0);
 
   // 登录后检查是否有 API Key + 加载路径列表
@@ -29,6 +31,7 @@ export default function Home() {
       checkApiKey();
       loadPaths();
       loadPendingCount();
+      loadBuddyCount();
       loadNotifCount();
     }
   }, [user]);
@@ -46,6 +49,14 @@ export default function Home() {
       const token = useAuthStore.getState().token;
       const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setPendingCount(d.requests?.length || 0); setFriendCount(d.friends?.length || 0); }
+    } catch { /* ignore */ }
+  };
+
+  const loadBuddyCount = async () => {
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setBuddyCount((d.buddies || []).length); setBuddies(d.buddies || []); }
     } catch { /* ignore */ }
   };
 
@@ -169,7 +180,7 @@ export default function Home() {
               </div>
               <div className="bg-white rounded-xl shadow-sm p-4">
                 <p className="text-sm text-gray-500">搭子</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">{buddyCount}</p>
               </div>
             </div>
 
@@ -215,6 +226,41 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            {/* 搭子空间 */}
+            {buddies.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold text-gray-900">🤝 搭子空间</h3>
+                  <Link href="/friends" className="text-sm text-indigo-600 hover:text-indigo-500">
+                    查看全部
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {buddies.map(b => (
+                    <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-purple-100 hover:border-purple-200 hover:bg-purple-50/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {b.buddy.username}
+                          <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">{b.domain}</span>
+                        </p>
+                        {b.sharedPathId && b.sharedPathTitle ? (
+                          <Link href={`/paths/${b.sharedPathId}`} className="text-xs text-indigo-500 hover:text-indigo-700 mt-0.5 inline-block">
+                            📚 共享路径：{b.sharedPathTitle}
+                          </Link>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-0.5">暂无共享路径</p>
+                        )}
+                      </div>
+                      <Link href={`/messages?with=${b.buddy.id}`}
+                        className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 shrink-0">
+                        💬 私信
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center space-y-6 py-20">
