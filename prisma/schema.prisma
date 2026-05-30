@@ -28,6 +28,7 @@ model User {
   posts                     Post[]
   sentRequests              Friendship[] @relation("from")
   receivedRequests          Friendship[] @relation("to")
+  resources                 Resource[]
 
   @@map("users")
 }
@@ -111,6 +112,24 @@ model Friendship {
   @@index([toUserId, status])
   @@index([fromUserId, status])
   @@map("friendships")
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  url         String?
+  fileUrl     String?  @map("file_url")
+  fileName    String?  @map("file_name")
+  domain      String
+  description String?
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([domain])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("resources")
 }
 
 model RefreshToken {
