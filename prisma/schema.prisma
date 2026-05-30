@@ -26,6 +26,8 @@ model User {
   nodeProgress              UserNodeProgress[]
   checkIns                  CheckIn[]
   posts                     Post[]
+  sentRequests              Friendship[] @relation("from")
+  receivedRequests          Friendship[] @relation("to")
 
   @@map("users")
 }
@@ -93,6 +95,22 @@ model Post {
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("posts")
+}
+
+model Friendship {
+  id         String    @id @default(uuid())
+  fromUserId String    @map("from_user_id")
+  toUserId   String    @map("to_user_id")
+  status     String    @default("pending") // pending | accepted | rejected
+  createdAt  DateTime  @default(now()) @map("created_at")
+  acceptedAt DateTime? @map("accepted_at")
+  fromUser   User      @relation("from", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User      @relation("to", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+  @@map("friendships")
 }
 
 model RefreshToken {

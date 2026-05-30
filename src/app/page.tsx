@@ -91,6 +91,7 @@ export default function Home() {
               <Link href="/paths/new" className="text-sm text-indigo-600 hover:text-indigo-500">
                 生成路径
               </Link>
+              <Link href="/friends" className="text-sm text-gray-500 hover:text-indigo-600">好友</Link>
               <Link href="/profile" className="text-sm text-gray-600 hover:text-indigo-600">
                 {user.username}
               </Link>
