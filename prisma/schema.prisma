@@ -30,6 +30,9 @@ model User {
   receivedRequests          Friendship[] @relation("to")
   resources                 Resource[]
   likes                     Like[]
+  sentBuddies               StudyBuddy[] @relation("buddyFrom")
+  receivedBuddies           StudyBuddy[] @relation("buddyTo")
+  comments                  NodeComment[]
 
   @@map("users")
 }
@@ -43,6 +46,7 @@ model LearningPath {
   isPublic   Boolean  @default(false) @map("is_public")
   isTemplate Boolean  @default(false) @map("is_template")
   forkCount  Int      @default(0) @map("fork_count")
+  visibility String   @default("public") @map("visibility")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -92,6 +96,7 @@ model Post {
   images       Json     @default("[]")
   markdown     String?  @map("markdown")
   markdownHtml String?  @map("markdown_html")
+  visibility   String   @default("public") @map("visibility") // public | friends | buddies
   createdAt    DateTime @default(now()) @map("created_at")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -125,12 +130,42 @@ model Resource {
   domain      String
   description String?
   notes       String?
+  visibility  String   @default("public") @map("visibility") // public | friends | buddies
   createdAt   DateTime @default(now()) @map("created_at")
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([domain])
   @@index([userId, createdAt(sort: Desc)])
   @@map("resources")
+}
+
+model StudyBuddy {
+  id           String    @id @default(uuid())
+  fromUserId   String    @map("from_user_id")
+  toUserId     String    @map("to_user_id")
+  domain       String
+  sharedPathId String?   @map("shared_path_id")
+  status       String    @default("pending") // pending | active | ended
+  createdAt    DateTime  @default(now()) @map("created_at")
+  activeAt     DateTime? @map("active_at")
+  fromUser     User      @relation("buddyFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser       User      @relation("buddyTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId, domain])
+  @@map("study_buddies")
+}
+
+model NodeComment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  pathId    String   @map("path_id")
+  nodeId    String   @map("node_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pathId, nodeId, createdAt(sort: Desc)])
+  @@map("node_comments")
 }
 
 model Like {
