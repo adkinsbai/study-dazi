@@ -154,6 +154,9 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
               <p className="text-sm text-gray-500 italic">{node.why}</p>
             </div>
           )}
+
+          {/* Comments */}
+          <CommentsSection pathId={pathId} nodeId={node.id} />
         </div>
       </div>
 
@@ -167,5 +170,60 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
         }
       `}</style>
     </>
+  );
+}
+
+// ─── Comments section ──────────────────────────────
+interface Comment {
+  id: string; content: string; createdAt: string;
+  user: { id: string; username: string; avatarUrl: string | null };
+}
+
+function CommentsSection({ pathId, nodeId }: { pathId: string; nodeId: string }) {
+  const token = useAuthStore(s => s.token);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => { loadComments(); }, [pathId, nodeId]);
+
+  const loadComments = async () => {
+    try {
+      const res = await fetch(`/api/comments?pathId=${pathId}&nodeId=${nodeId}`);
+      if (res.ok) { const d = await res.json(); setComments(d.comments || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleSubmit = async () => {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pathId, nodeId, content: text }),
+      });
+      if (res.ok) { const d = await res.json(); setComments(prev => [...prev, d.comment]); setText(''); }
+    } catch { /* ignore */ } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-gray-700 mb-2">💬 留言 ({comments.length})</h3>
+      <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+        {comments.map(c => (
+          <div key={c.id} className="text-sm">
+            <span className="font-medium text-gray-700">{c.user.username}</span>
+            <span className="text-xs text-gray-400 ml-2">{new Date(c.createdAt).toLocaleDateString('zh-CN')}</span>
+            <p className="text-gray-600 mt-0.5">{c.content}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          placeholder="写留言..." className="flex-1 border rounded-md px-2 py-1 text-xs focus:outline-none focus:border-indigo-400" />
+        <button onClick={handleSubmit} disabled={submitting}
+          className="px-2 py-1 bg-indigo-600 text-white text-xs rounded-md">{submitting ? '...' : '发送'}</button>
+      </div>
+    </div>
   );
 }

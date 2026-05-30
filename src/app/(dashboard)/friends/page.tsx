@@ -119,6 +119,9 @@ export default function FriendsPage() {
           </div>
         )}
 
+        {/* Buddies */}
+        <BuddySection />
+
         {/* Friend list */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">我的好友 ({friends.length})</h3>
@@ -139,6 +142,71 @@ export default function FriendsPage() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// ─── Buddy section ─────────────────────────────────
+function BuddySection() {
+  const token = useAuthStore(s => s.token);
+  const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string } }[]>([]);
+  const [buddyRequests, setBuddyRequests] = useState<{ id: string; fromUser: { username: string }; domain: string }[]>([]);
+  const [inviteFriend, setInviteFriend] = useState('');
+  const [inviteDomain, setInviteDomain] = useState('');
+
+  useEffect(() => { if (token) loadBuddies(); }, [token]);
+
+  const loadBuddies = async () => {
+    try {
+      const res = await fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setBuddies(d.buddies || []); setBuddyRequests(d.requests || []); }
+    } catch { /* ignore */ }
+  };
+
+  const handleInvite = async () => {
+    if (!inviteFriend || !inviteDomain) return;
+    try {
+      await fetch('/api/buddies', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ toUserId: inviteFriend, domain: inviteDomain }) });
+      setInviteFriend(''); setInviteDomain(''); alert('搭子邀请已发送');
+    } catch { /* ignore */ }
+  };
+
+  const handleBuddyAction = async (id: string, action: string) => {
+    await fetch('/api/buddies', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id, action }) });
+    loadBuddies();
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+      <h3 className="text-sm font-semibold text-gray-700">搭子 ({buddies.length})</h3>
+
+      {buddies.map(b => (
+        <div key={b.id} className="flex items-center gap-2 text-sm">
+          <span>🤝 {b.buddy.username}</span>
+          <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">{b.domain}</span>
+        </div>
+      ))}
+
+      {buddyRequests.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500">搭子申请</p>
+          {buddyRequests.map(r => (
+            <div key={r.id} className="flex items-center gap-2 text-sm">
+              <span>{r.fromUser.username} · {r.domain}</span>
+              <button onClick={() => handleBuddyAction(r.id, 'accept')} className="text-xs text-emerald-600">接受</button>
+              <button onClick={() => handleBuddyAction(r.id, 'reject')} className="text-xs text-red-400">拒绝</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-1">
+        <input value={inviteFriend} onChange={e => setInviteFriend(e.target.value)} placeholder="好友ID"
+          className="flex-1 border rounded-md px-2 py-1 text-xs" />
+        <input value={inviteDomain} onChange={e => setInviteDomain(e.target.value)} placeholder="领域"
+          className="w-24 border rounded-md px-2 py-1 text-xs" />
+        <button onClick={handleInvite} className="px-2 py-1 bg-purple-600 text-white text-xs rounded-md">邀请搭子</button>
+      </div>
     </div>
   );
 }
