@@ -47,6 +47,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const PatchSchema = z.object({
+  id: z.string().min(1),
+  content: z.string().min(1).max(5000).optional(),
+});
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!auth) return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    const payload = await verifyAccessToken(auth);
+    const body = PatchSchema.parse(await req.json());
+    const post = await prisma.post.findUnique({ where: { id: body.id } });
+    if (!post || post.userId !== payload.sub) return NextResponse.json({ error: '无权操作' }, { status: 403 });
+    await prisma.post.update({ where: { id: body.id }, data: { content: body.content } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) return NextResponse.json({ error: '参数错误' }, { status: 422 });
+    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
