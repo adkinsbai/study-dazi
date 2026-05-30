@@ -16,7 +16,8 @@ export async function GET(
 
     const path = await prisma.learningPath.findUnique({ where: { id } });
     if (!path) return NextResponse.json({ error: '路径不存在' }, { status: 404 });
-    if (path.userId !== payload.sub) {
+    // 允许所有者 + 公开/模板路径的访问
+    if (path.userId !== payload.sub && !path.isPublic && !path.isTemplate) {
       return NextResponse.json({ error: '无权访问' }, { status: 403 });
     }
 
