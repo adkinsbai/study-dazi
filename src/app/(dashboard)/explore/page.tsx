@@ -98,16 +98,19 @@ export default function ExplorePage() {
       if (resForm.description) body.description = resForm.description;
       if (resForm.notes) body.notes = resForm.notes;
       if (resForm.fileUrl) { body.fileUrl = resForm.fileUrl; body.fileName = resForm.fileName; }
+      console.log('[Resource] submitting body keys:', Object.keys(body), 'fileUrl length:', (body.fileUrl || '').length);
       const res = await fetch('/api/resources', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-      if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.error || '提交失败'); }
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || '提交失败 (' + res.status + ')');
       setShowResourceForm(false);
       setResForm({ title: '', url: '', domain: '', description: '', notes: '', fileUrl: '', fileName: '' });
       loadTab('resources', domain);
     } catch (err) {
       setResError(err instanceof Error ? err.message : '提交失败');
+      console.error('[Resource] submit error:', err);
     } finally { setResSubmitting(false); }
   };
 
