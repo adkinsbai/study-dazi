@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       const [resources, total] = await Promise.all([
         prisma.resource.findMany({
           where, orderBy: { createdAt: 'desc' }, skip, take: limit,
-          include: { user: { select: { username: true } } },
+          include: { user: { select: { id: true, username: true, avatarUrl: true } } },
         }),
         prisma.resource.count({ where }),
       ]);

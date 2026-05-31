@@ -21,7 +21,7 @@ function MessagesPageInner() {
   const myId = useAuthStore(s => s.user?.id);
   const params = useSearchParams();
   const [convs, setConvs] = useState<Conv[]>([]);
-  const [chatUser, setChatUser] = useState<{ id: string; username: string } | null>(null);
+  const [chatUser, setChatUser] = useState<{ id: string; username: string; avatarUrl?: string | null } | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
 
@@ -36,7 +36,7 @@ function MessagesPageInner() {
     if (convs !== undefined) {
       fetch(`/api/users/${withId}`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.user) openChat({ id: d.user.id, username: d.user.username }); });
+        .then(d => { if (d?.user) openChat({ id: d.user.id, username: d.user.username, avatarUrl: d.user.avatarUrl }); });
     }
   }, [params, convs]);
 
@@ -45,7 +45,7 @@ function MessagesPageInner() {
     if (res.ok) { const d = await res.json(); setConvs(d.conversations || []); }
   };
 
-  const openChat = async (user: { id: string; username: string }) => {
+  const openChat = async (user: { id: string; username: string; avatarUrl?: string | null }) => {
     setChatUser(user);
     const res = await fetch(`/api/messages?with=${user.id}`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) { const d = await res.json(); setMsgs(d.messages || []); }
@@ -117,8 +117,8 @@ function MessagesPageInner() {
               {/* 聊天头部 */}
               <div className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] px-4 py-3 flex items-center gap-3 shrink-0">
                 <button onClick={() => setChatUser(null)} className="md:hidden p-1 rounded-full text-gray-400 hover:bg-gray-100 transition-colors">←</button>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
-                  {chatUser.username[0]?.toUpperCase()}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
+                  {chatUser.avatarUrl ? <img src={chatUser.avatarUrl} className="w-full h-full object-cover" /> : chatUser.username[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{chatUser.username}</span>
               </div>

@@ -5,13 +5,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface ExploreComment { id: string; content: string; createdAt: string; user: { username: string }; }
+interface ExploreComment { id: string; content: string; createdAt: string; user: { username: string; avatarUrl: string | null }; }
 type Tab = 'posts' | 'resources' | 'paths';
 
 interface PostItem { id: string; content: string; images: string[]; markdown?: string; createdAt: string;
   user: { id: string; username: string; avatarUrl: string | null }; }
 interface ResourceItem { id: string; title: string; url?: string; fileUrl?: string; fileName?: string; notes?: string; domain: string; description?: string; createdAt: string;
-  user: { username: string }; }
+  user: { id: string; username: string; avatarUrl: string | null }; }
 interface PathItem { id: string; title: string; domain: string; forkCount: number; createdAt: string;
   user: { id: string; username: string; avatarUrl: string | null }; }
 
@@ -148,8 +148,8 @@ export default function ExplorePage() {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* 领域筛选 */}
-        {suggestedDomains.length > 0 && (
+        {/* 领域筛选（仅资源和路径） */}
+        {tab !== 'posts' && suggestedDomains.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-5">
             {suggestedDomains.map(d => (
               <button key={d} onClick={() => { setDomain(domain === d ? '' : d); loadTab(tab, domain === d ? '' : d); }}
@@ -328,7 +328,7 @@ export default function ExplorePage() {
                   {paths.map((t, i) => (
                     <article key={t.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                       <div className="p-5">
-                        <div className="flex items-start gap-3 mb-3">
+                        <Link href={`/paths/${t.id}`} className="flex items-start gap-3 mb-3 cursor-pointer">
                           <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] text-white flex items-center justify-center text-sm shrink-0">🗺️</span>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#f97066] transition-colors">{t.title}</h3>
@@ -337,9 +337,11 @@ export default function ExplorePage() {
                               <span className="text-xs text-gray-400">Fork {t.forkCount}</span>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                         <div className="flex items-center gap-2 mb-4">
-                          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] text-gray-500">{t.user.username[0]}</div>
+                          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] text-gray-500 overflow-hidden">
+                            {t.user.avatarUrl ? <img src={t.user.avatarUrl} className="w-full h-full object-cover" /> : t.user.username[0]}
+                          </div>
                           <span className="text-xs text-gray-500">{t.user.username}</span>
                         </div>
                         <button onClick={() => handleFork(t.id)} className="w-full py-2 rounded-full bg-[#f97066] text-white text-sm font-medium hover:bg-[#e0524a] transition-colors">
@@ -399,7 +401,7 @@ function InlineComments({ targetId, type }: { targetId: string; type: string }) 
           {comments.length === 0 && <p className="text-xs text-gray-300 pl-6">暂无评论，说点什么吧</p>}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5 pl-6">
-              <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">{c.user.username[0]}</span>
+              <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 overflow-hidden">{c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" /> : c.user.username[0]}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs"><span className="font-semibold text-gray-800">{c.user.username}</span> <span className="text-gray-600">{c.content}</span></p>
                 <p className="text-[10px] text-gray-300 mt-0.5">{new Date(c.createdAt).toLocaleDateString('zh-CN')}</p>
