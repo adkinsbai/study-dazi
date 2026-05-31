@@ -53,35 +53,55 @@ function isRequiredNode(node: TreeNode): boolean {
   return node.node_type === 'required';
 }
 
-/** 计算节点真实状态：自己的进度 > 祖先链 > 同级排序 */
+/**
+ * 计算节点状态。
+ * - 叶子节点（无子节点）：直接读 progressMap，无记录则 unlocked
+ * - 分支节点（有子节点）：由子节点进度自动推算
+ *   - 全部 required 子节点 completed → completed
+ *   - 任一子节点 in_progress → in_progress
+ *   - 否则 → unlocked
+ * 
+ * 同级节点之间无依赖关系，用户自由选择学习顺序。
+ */
 function computeNodeStatus(
   node: TreeNode,
   progressMap: ProgressMap,
-  ancestorNodes: TreeNode[],
-  siblingIndex: number,
-  siblings: TreeNode[],
+  _ancestorNodes: TreeNode[],
+  _siblingIndex: number,
+  _siblings: TreeNode[],
 ): NodeStatus {
-  // 1. 自己的进度优先
-  const own = progressMap[node.id];
-  if (own?.status === 'completed') return 'completed';
-  if (own?.status === 'in_progress') return 'in_progress';
+  const hasChildren = node.children && node.children.length > 0;
 
-  // 2. 所有必修祖先必须完成
-  for (const ancestor of ancestorNodes) {
-    if (!isRequiredNode(ancestor)) continue;
-    const ap = progressMap[ancestor.id];
-    if (!ap || ap.status !== 'completed') return 'locked';
+  if (!hasChildren) {
+    // 叶子节点：自己的进度优先
+    const own = progressMap[node.id];
+    if (own?.status === 'completed') return 'completed';
+    if (own?.status === 'in_progress') return 'in_progress';
+    return 'unlocked';
   }
 
-  // 3. 所有排在前面的必修同级必须完成
-  for (let i = 0; i < siblingIndex; i++) {
-    const sibling = siblings[i];
-    if (!isRequiredNode(sibling)) continue;
-    const sp = progressMap[sibling.id];
-    if (!sp || sp.status !== 'completed') return 'locked';
+  // 分支节点：从子节点聚合计算
+  const children = node.children!;
+  const requiredChildren = children.filter(isRequiredNode);
+  const allChildren = children;
+
+  if (requiredChildren.length > 0) {
+    const allRequiredDone = requiredChildren.every(
+      c => progressMap[c.id]?.status === 'completed'
+    );
+    if (allRequiredDone) return 'completed';
+  } else {
+    const allDone = allChildren.every(
+      c => progressMap[c.id]?.status === 'completed'
+    );
+    if (allDone && allChildren.length > 0) return 'completed';
   }
 
-  // 4. 前置条件全部满足
+  const anyInProgress = allChildren.some(
+    c => progressMap[c.id]?.status === 'in_progress'
+  );
+  if (anyInProgress) return 'in_progress';
+
   return 'unlocked';
 }
 

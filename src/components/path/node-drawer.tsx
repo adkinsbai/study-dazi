@@ -75,39 +75,47 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
         </div>
 
         <div className="px-5 py-4 space-y-5">
-          {/* Status */}
-          {readOnly ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">状态：</span>
-              <span className="px-3 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                {currentStatus === 'completed' ? '已完成' : currentStatus === 'in_progress' ? '进行中' : '未开始'}
-              </span>
-              <span className="text-[10px] text-gray-400">（仅所有者可修改）</span>
-            </div>
-          ) : (
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Status badge + action */}
+          <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">状态：</span>
-            <div className="flex gap-1">
-              {(['unlocked', 'in_progress', 'completed'] as NodeStatus[]).map((s) => (
-                <button
-                  key={s}
-                  disabled={saving}
-                  onClick={() => handleStatusChange(s)}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                    currentStatus === s
-                      ? s === 'completed' ? 'bg-emerald-500 text-white'
-                        : s === 'in_progress' ? 'bg-amber-500 text-white'
-                        : 'bg-indigo-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {s === 'unlocked' ? '未开始' : s === 'in_progress' ? '进行中' : '已完成'}
-                </button>
-              ))}
-            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              currentStatus === 'completed' ? 'bg-emerald-100 text-emerald-700'
+                : currentStatus === 'in_progress' ? 'bg-amber-100 text-amber-700'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {currentStatus === 'completed' ? '✅ 已完成'
+                : currentStatus === 'in_progress' ? '🔥 进行中'
+                : '📌 未开始'}
+            </span>
+            {!readOnly && currentStatus === 'unlocked' && (
+              <button
+                onClick={() => handleStatusChange('in_progress')}
+                disabled={saving}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+              >
+                🚀 开始学习
+              </button>
+            )}
+            {!readOnly && currentStatus === 'in_progress' && (
+              <button
+                onClick={() => handleStatusChange('completed')}
+                disabled={saving}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+              >
+                🎉 标记完成
+              </button>
+            )}
+            {!readOnly && currentStatus === 'completed' && (
+              <button
+                onClick={() => handleStatusChange('in_progress')}
+                disabled={saving}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                🔄 重新学习
+              </button>
+            )}
             {saving && <span className="text-xs text-gray-400">保存中...</span>}
-          </div>
-          )}
+          </div>}
           {saveError && <p className="text-xs text-red-500">{saveError}</p>}
 
           {/* Meta */}
