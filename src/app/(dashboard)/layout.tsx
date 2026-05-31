@@ -30,12 +30,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-[#fef7f5] bg-stripe">
       {/* 装饰泡泡 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div className="absolute top-[10%] left-[5%] w-48 h-48 rounded-full bg-[#f97066]/[0.07] blur-2xl"></div>
-        <div className="absolute top-[35%] right-[8%] w-32 h-32 rounded-full bg-[#8b5cf6]/[0.06] blur-2xl"></div>
-        <div className="absolute bottom-[15%] left-[20%] w-56 h-56 rounded-full bg-[#f97066]/[0.05] blur-3xl"></div>
-        <div className="absolute top-[60%] right-[25%] w-24 h-24 rounded-full bg-[#6366f1]/[0.06] blur-xl"></div>
-        <div className="absolute bottom-[40%] left-[45%] w-40 h-40 rounded-full bg-[#f97066]/[0.04] blur-2xl"></div>
-        <div className="absolute top-[80%] right-[15%] w-36 h-36 rounded-full bg-[#8b5cf6]/[0.05] blur-2xl"></div>
+        <div className="absolute top-[8%] left-[3%] w-64 h-64 rounded-full bg-[#f97066]/[0.2] blur-xl"></div>
+        <div className="absolute top-[30%] right-[5%] w-48 h-48 rounded-full bg-[#8b5cf6]/[0.15] blur-lg"></div>
+        <div className="absolute bottom-[20%] left-[15%] w-72 h-72 rounded-full bg-[#f97066]/[0.12] blur-xl"></div>
+        <div className="absolute top-[55%] right-[20%] w-40 h-40 rounded-full bg-[#6366f1]/[0.15] blur-lg"></div>
+        <div className="absolute bottom-[10%] right-[35%] w-56 h-56 rounded-full bg-[#f97066]/[0.1] blur-xl"></div>
+        <div className="absolute top-[75%] left-[40%] w-36 h-36 rounded-full bg-[#8b5cf6]/[0.12] blur-lg"></div>
       </div>
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">

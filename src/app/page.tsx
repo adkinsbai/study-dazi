@@ -108,12 +108,12 @@ export default function Home() {
     <div className="min-h-screen bg-[#fef7f5] bg-stripe relative overflow-hidden page-enter">
       {/* 装饰泡泡 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div className="absolute top-[8%] left-[3%] w-52 h-52 rounded-full bg-[#f97066]/[0.08] blur-2xl"></div>
-        <div className="absolute top-[30%] right-[5%] w-36 h-36 rounded-full bg-[#8b5cf6]/[0.07] blur-2xl"></div>
-        <div className="absolute bottom-[20%] left-[15%] w-64 h-64 rounded-full bg-[#f97066]/[0.05] blur-3xl"></div>
-        <div className="absolute top-[55%] right-[20%] w-28 h-28 rounded-full bg-[#6366f1]/[0.06] blur-xl"></div>
-        <div className="absolute bottom-[10%] right-[35%] w-44 h-44 rounded-full bg-[#f97066]/[0.04] blur-2xl"></div>
-        <div className="absolute top-[75%] left-[40%] w-20 h-20 rounded-full bg-[#8b5cf6]/[0.06] blur-xl"></div>
+        <div className="absolute top-[8%] left-[3%] w-64 h-64 rounded-full bg-[#f97066]/[0.2] blur-xl"></div>
+        <div className="absolute top-[30%] right-[5%] w-48 h-48 rounded-full bg-[#8b5cf6]/[0.15] blur-lg"></div>
+        <div className="absolute bottom-[20%] left-[15%] w-72 h-72 rounded-full bg-[#f97066]/[0.12] blur-xl"></div>
+        <div className="absolute top-[55%] right-[20%] w-40 h-40 rounded-full bg-[#6366f1]/[0.15] blur-lg"></div>
+        <div className="absolute bottom-[10%] right-[35%] w-56 h-56 rounded-full bg-[#f97066]/[0.1] blur-xl"></div>
+        <div className="absolute top-[75%] left-[40%] w-36 h-36 rounded-full bg-[#8b5cf6]/[0.12] blur-lg"></div>
       </div>
 
       {/* 顶部导航 */}
