@@ -263,15 +263,16 @@ export default function Home() {
                   </div>
                   <div className="divide-y divide-gray-50">
                     {buddies.map(b => (
-                      <div key={b.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                        <span className="w-8 h-8 rounded-full bg-[#ede9fe] flex items-center justify-center text-[#7c3aed] text-xs font-bold shrink-0 overflow-hidden">
+                      <div key={b.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors relative group">
+                        <Link href="/buddies" className="absolute inset-0 z-0" aria-label={`查看与 ${b.buddy.username} 的搭子看板`} />
+                        <span className="w-8 h-8 rounded-full bg-[#ede9fe] flex items-center justify-center text-[#7c3aed] text-xs font-bold shrink-0 overflow-hidden z-10">
                           {b.buddy.avatarUrl ? <img src={b.buddy.avatarUrl} className="w-full h-full object-cover" alt="" /> : b.buddy.username[0]}
                         </span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 z-10">
                           <p className="text-sm font-medium text-gray-900 truncate">{b.buddy.username}</p>
                           <span className="text-[10px] bg-[#ede9fe] text-[#7c3aed] px-1.5 py-0.5 rounded-full">{b.domain}</span>
                         </div>
-                        <Link href={`/messages?with=${b.buddy.id}`} className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0" title="私信"><MessageCircle size={14} /></Link>
+                        <Link href={`/messages?with=${b.buddy.id}`} className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0 z-10 relative" title="私信"><MessageCircle size={14} /></Link>
                       </div>
                     ))}
                   </div>
