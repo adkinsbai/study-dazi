@@ -79,8 +79,10 @@ export default function ExplorePage() {
         const res = await fetch('/api/explore?type=posts');
         if (res.ok) { const data = await res.json(); setPosts(data.posts || []); }
       } else if (t === 'resources') {
-        const params = d ? `?type=resources&domain=${d}` : '?type=resources';
-        const res = await fetch(`/api/explore${params}`);
+        const params = new URLSearchParams({ type: 'resources' });
+        if (d) params.set('domain', d);
+        if (search) params.set('search', search);
+        const res = await fetch(`/api/explore?${params}`);
         if (res.ok) { const data = await res.json(); setResources(data.resources || []); }
       } else {
         const params = new URLSearchParams();
@@ -191,12 +193,15 @@ export default function ExplorePage() {
 
             {tab === 'resources' && (
               <div className="space-y-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('resources', domain)}
+                    placeholder="搜索资源名称..." className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
+                  <button onClick={() => loadTab('resources', domain)} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500">搜索</button>
                   <button onClick={() => { setShowResourceForm(!showResourceForm); setResError(''); }}
-                    className="text-sm text-indigo-600 hover:text-indigo-500">+ 分享资源</button>
+                    className="text-sm text-indigo-600 hover:text-indigo-500 shrink-0">+ 分享资源</button>
                   <button onClick={() => setShowLiked(!showLiked)}
-                    className={`text-xs ${showLiked ? 'text-red-500' : 'text-gray-400'} hover:text-red-500`}>
-                    {showLiked ? '❤️ 我的收藏' : '🤍 我的收藏'}
+                    className={`text-xs shrink-0 ${showLiked ? 'text-red-500' : 'text-gray-400'} hover:text-red-500`}>
+                    {showLiked ? '❤️' : '🤍'}
                   </button>
                 </div>
                 {showResourceForm && (

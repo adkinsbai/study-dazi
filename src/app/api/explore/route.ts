@@ -15,8 +15,10 @@ export async function GET(req: NextRequest) {
 
     if (type === 'resources') {
       const domain = req.nextUrl.searchParams.get('domain') || '';
+      const search = req.nextUrl.searchParams.get('search') || '';
       const where: Record<string, unknown> = {};
       if (domain) where.domain = domain;
+      if (search) where.title = { contains: search, mode: 'insensitive' };
       const resources = await prisma.resource.findMany({
         where, orderBy: { createdAt: 'desc' }, take: 30,
         include: { user: { select: { username: true } } },
