@@ -94,7 +94,7 @@ export default function ExplorePage() {
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const switchTab = (t: Tab) => { setTab(t); loadTab(t, domain); };
+  const switchTab = (t: Tab) => { setTab(t); setSearch(''); loadTab(t, domain); };
 
   const handleFork = async (id: string) => {
     const res = await fetch(`/api/paths/${id}/fork`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
