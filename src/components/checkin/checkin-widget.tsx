@@ -97,10 +97,10 @@ export function CheckInWidget() {
           <button
             onClick={handleCheckIn}
             disabled={todayDone || loading}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`px-5 py-2 rounded-full text-sm font-bold btn-press ${
               todayDone
-                ? 'bg-emerald-100 text-emerald-700 cursor-default'
-                : 'bg-indigo-600 text-white hover:bg-indigo-500 active:scale-95'
+                ? 'bg-emerald-100 text-emerald-700 cursor-default check-bounce'
+                : 'bg-[#f97066] text-white hover:bg-[#e0524a]'
             }`}
           >
             {todayDone ? '✅ 今日已打卡' : loading ? '⏳' : '📅 打卡'}

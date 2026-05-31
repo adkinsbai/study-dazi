@@ -103,7 +103,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef7f5] relative overflow-hidden">
+    <div className="min-h-screen bg-[#fef7f5] relative overflow-hidden page-enter">
       {/* 背景装饰 */}
       <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-20 -left-20 w-72 h-72 rounded-full bg-[#f97066]/[0.05] blur-2xl"></div>
@@ -120,7 +120,7 @@ export default function Home() {
           </Link>
           {user ? (
             <nav className="flex items-center gap-1 sm:gap-2" role="navigation" aria-label="主导航">
-              <Link href="/paths/new" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f97066] text-white text-sm font-medium hover:bg-[#e0524a] transition-colors">
+              <Link href="/paths/new" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f97066] text-white text-sm font-medium hover:bg-[#e0524a] transition-colors btn-press">
                 <Sparkles size={14} /> 生成路径
               </Link>
               <Link href="/explore" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors">广场</Link>
@@ -207,8 +207,8 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {paths.map((p) => (
-                      <div key={p.id} className="group relative bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all overflow-hidden">
+                    {paths.map((p, i) => (
+                      <div key={p.id} className="group relative bg-white rounded-2xl border border-gray-100 hover:border-gray-200 overflow-hidden card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                         <Link href={`/paths/${p.id}`} className="block p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
@@ -237,15 +237,15 @@ export default function Home() {
             <aside className="space-y-5">
               {/* 快捷数据 */}
               <div className="grid grid-cols-3 gap-2">
-                <Link href="/paths/new" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+                <Link href="/paths/new" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 card-lift btn-press">
                   <span className="text-xl font-bold text-gray-900">{paths.length}</span>
                   <span className="text-[10px] text-gray-500">路径</span>
                 </Link>
-                <Link href="/friends" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+                <Link href="/friends" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 card-lift btn-press">
                   <span className="text-xl font-bold text-gray-900">{friendCount}</span>
                   <span className="text-[10px] text-gray-500">好友</span>
                 </Link>
-                <Link href="/buddies" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+                <Link href="/buddies" className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-white border border-gray-100 card-lift btn-press">
                   <span className="text-xl font-bold text-gray-900">{buddyCount}</span>
                   <span className="text-[10px] text-gray-500">搭子</span>
                 </Link>
@@ -323,17 +323,17 @@ export default function Home() {
 
             {/* 特性卡片 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 card-lift stagger-item" style={{ '--i': 0 } as React.CSSProperties}>
                 <div className="w-10 h-10 rounded-xl bg-[#fde8e6] flex items-center justify-center mb-3"><Sparkles size={20} className="text-[#f97066]" /></div>
                 <h3 className="font-semibold text-gray-900 mb-1.5">AI 生成路径</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">输入想学的领域，AI 帮你拆解成可执行的学习路径</p>
               </div>
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 card-lift stagger-item" style={{ '--i': 1 } as React.CSSProperties}>
                 <div className="w-10 h-10 rounded-xl bg-[#ede9fe] flex items-center justify-center mb-3"><Users size={20} className="text-[#8b5cf6]" /></div>
                 <h3 className="font-semibold text-gray-900 mb-1.5">找到学习搭子</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">匹配同领域的学习伙伴，互相督促，不再孤军奋战</p>
               </div>
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 card-lift stagger-item" style={{ '--i': 2 } as React.CSSProperties}>
                 <div className="w-10 h-10 rounded-xl bg-[#fef3c7] flex items-center justify-center mb-3"><Flame size={20} className="text-[#f59e0b]" /></div>
                 <h3 className="font-semibold text-gray-900 mb-1.5">打卡坚持</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">每日打卡记录进度，连续天数激励你坚持到底</p>
@@ -349,8 +349,8 @@ export default function Home() {
 
       {/* API Key Modal */}
       {showKeyModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-label="配置 API Key">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm mx-4 space-y-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in" role="dialog" aria-modal="true" aria-label="配置 API Key">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm mx-4 space-y-4 modal-enter">
             <div className="text-center">
               <Key size={32} className="mx-auto mb-2 text-[#f97066]" />
               <h3 className="text-lg font-semibold text-gray-900">配置 API Key</h3>

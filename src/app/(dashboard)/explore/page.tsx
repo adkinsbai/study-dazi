@@ -175,8 +175,8 @@ export default function ExplorePage() {
                     <p className="text-gray-400 text-sm">暂无动态</p>
                   </div>
                 )}
-                {posts.filter(p => !showLiked || likedPostIds.has(p.id)).map(p => (
-                  <article key={p.id} className="bg-white rounded-2xl border border-gray-100 hover:border-[#fde8e6] hover:shadow-sm transition-all overflow-hidden">
+                {posts.filter(p => !showLiked || likedPostIds.has(p.id)).map((p, i) => (
+                  <article key={p.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                     {/* 用户信息 */}
                     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
                       <Link href={`/profile/${p.user.id}`} className="shrink-0">
@@ -189,7 +189,7 @@ export default function ExplorePage() {
                         <p className="text-[11px] text-gray-400">{new Date(p.createdAt).toLocaleDateString('zh-CN')}</p>
                       </div>
                       <button onClick={() => toggleLike(p.id, undefined)}
-                        className={`p-1.5 rounded-full transition-colors ${likedPostIds.has(p.id) ? 'text-[#f97066] bg-[#fde8e6]' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
+                        className={`p-1.5 rounded-full transition-colors ${likedPostIds.has(p.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
                         {likedPostIds.has(p.id) ? '❤️' : '🤍'}
                       </button>
                     </div>
@@ -271,8 +271,8 @@ export default function ExplorePage() {
                     <p className="text-gray-400 text-sm">暂无资源</p>
                   </div>
                 )}
-                {resources.filter(r => !showLiked || likedResourceIds.has(r.id)).map(r => (
-                  <article key={r.id} className="bg-white rounded-2xl border border-gray-100 hover:border-[#fde8e6] hover:shadow-sm transition-all overflow-hidden">
+                {resources.filter(r => !showLiked || likedResourceIds.has(r.id)).map((r, i) => (
+                  <article key={r.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                     <div className="p-5">
                       <div className="flex items-start gap-3">
                         <span className="w-10 h-10 rounded-xl bg-[#fde8e6] text-[#f97066] flex items-center justify-center text-sm shrink-0">📎</span>
@@ -292,7 +292,7 @@ export default function ExplorePage() {
                           )}
                         </div>
                         <button onClick={() => toggleLike(undefined, r.id)}
-                          className={`p-1.5 rounded-full transition-colors shrink-0 ${likedResourceIds.has(r.id) ? 'text-[#f97066] bg-[#fde8e6]' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
+                          className={`p-1.5 rounded-full transition-colors shrink-0 ${likedResourceIds.has(r.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
                           {likedResourceIds.has(r.id) ? '❤️' : '🤍'}
                         </button>
                       </div>
@@ -325,8 +325,8 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {paths.map(t => (
-                    <article key={t.id} className="bg-white rounded-2xl border border-gray-100 hover:border-[#fde8e6] hover:shadow-md transition-all overflow-hidden group">
+                  {paths.map((t, i) => (
+                    <article key={t.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                       <div className="p-5">
                         <div className="flex items-start gap-3 mb-3">
                           <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] text-white flex items-center justify-center text-sm shrink-0">🗺️</span>
