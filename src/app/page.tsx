@@ -105,7 +105,17 @@ export default function Home() {
   const recentPaths = paths.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#fef7f5]">
+    <div className="min-h-screen bg-[#fef7f5] relative overflow-hidden">
+      {/* 背景装饰泡泡 */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-20 -left-20 w-72 h-72 rounded-full bg-[#f97066]/[0.06] blur-xl"></div>
+        <div className="absolute top-1/3 -right-16 w-56 h-56 rounded-full bg-[#f97066]/[0.05] blur-xl"></div>
+        <div className="absolute bottom-40 left-1/4 w-40 h-40 rounded-full bg-[#8b5cf6]/[0.05] blur-xl"></div>
+        <div className="absolute bottom-20 right-1/3 w-64 h-64 rounded-full bg-[#6366f1]/[0.04] blur-xl"></div>
+        <div className="absolute top-1/2 left-1/2 w-80 h-80 rounded-full bg-[#f97066]/[0.03] blur-2xl -translate-x-1/2"></div>
+        <div className="absolute -bottom-10 left-10 w-48 h-48 rounded-full bg-[#f97066]/[0.07] blur-xl"></div>
+        <div className="absolute top-10 right-1/4 w-32 h-32 rounded-full bg-[#8b5cf6]/[0.04] blur-lg"></div>
+      </div>
       {/* 顶部导航 */}
       <header className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
