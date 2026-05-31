@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
 import { TreeRenderer, type TreeNode, type ProgressMap, type NodeStatus } from '@/components/path/tree-renderer';
 import { NodeDrawer } from '@/components/path/node-drawer';
+import { Pencil, Save, Share2, Trash2, GitFork, ArrowLeft, Plus, X } from 'lucide-react';
 
 interface PathData {
   id: string;
@@ -185,7 +186,7 @@ export default function PathDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#fef7f5]">
         <p className="text-gray-400">加载中...</p>
       </div>
     );
@@ -193,10 +194,10 @@ export default function PathDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#fef7f5]">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-md text-sm">{error}</div>
-          <button onClick={() => router.push('/')} className="mt-4 text-sm text-indigo-600">← 返回首页</button>
+          <button onClick={() => router.push('/')} className="mt-4 text-sm text-[#6366f1]"><ArrowLeft size={14} /> 返回首页</button>
         </div>
       </div>
     );
@@ -230,8 +231,8 @@ export default function PathDetailPage() {
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div>
-      <header className="bg-white border-b border-gray-200">
+    <div className="bg-[#fef7f5] min-h-screen page-enter">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">{path.title}</h1>
@@ -241,13 +242,13 @@ export default function PathDetailPage() {
             {/* Mini progress ring */}
             {totalCount > 0 && (
               <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-8 h-8 rounded-full border-2 border-indigo-200 flex items-center justify-center relative">
+                <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center relative">
                   <svg viewBox="0 0 36 36" className="w-8 h-8 -rotate-90 absolute">
                     <circle cx="18" cy="18" r="14" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="14" fill="none" stroke="#6366f1" strokeWidth="3"
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#f97066" strokeWidth="3"
                       strokeDasharray={`${progressPct * 0.88} 88`} strokeLinecap="round" />
                   </svg>
-                  <span className="text-[10px] font-bold text-indigo-600">{progressPct}%</span>
+                  <span className="text-[10px] font-bold text-[#f97066]">{progressPct}%</span>
                 </div>
                 <span className="text-xs">{completedCount}/{totalCount}</span>
               </div>
@@ -256,39 +257,39 @@ export default function PathDetailPage() {
             {isOwner ? (
               <>
                 <button onClick={() => editMode ? handleSaveAll() : setEditMode(true)}
-                  className={`text-sm ${editMode ? 'text-emerald-600' : 'text-gray-400'} hover:text-emerald-500`}>
-                  {editMode ? (saving ? '保存中...' : dirty ? '💾 保存 *' : '💾 保存') : '✏️ 编辑'}
+                  className={`text-sm btn-press ${editMode ? 'text-emerald-600' : 'text-gray-400'} hover:text-emerald-500`}>
+                  {editMode ? (saving ? '保存中...' : dirty ? <><Save size={14} /> 保存 *</> : <><Save size={14} /> 保存</>) : <><Pencil size={14} /> 编辑</>}
                 </button>
                 {editMode && (
-                  <button onClick={() => setEditMode(false)} className="text-sm text-gray-400 hover:text-gray-600">取消</button>
+                  <button onClick={() => setEditMode(false)} className="text-sm text-gray-400 hover:text-gray-600 btn-press">取消</button>
                 )}
                 <button onClick={handleShare}
-                  className={`text-sm ${path.isTemplate ? 'text-amber-600' : 'text-gray-400'} hover:text-amber-500`}>
-                  {path.isTemplate ? '🌟 已分享' : '📤 分享'}
+                  className={`text-sm btn-press ${path.isTemplate ? 'text-amber-600' : 'text-gray-400'} hover:text-amber-500`}>
+                  {path.isTemplate ? <><Share2 size={14} /> 已分享</> : <><Share2 size={14} /> 分享</>}
                 </button>
                 <button onClick={handleDelete} disabled={deleting}
-                  className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50">
-                  {deleting ? '删除中...' : '🗑️ 删除'}
+                  className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50 btn-press">
+                  {deleting ? '删除中...' : <><Trash2 size={14} /> 删除</>}
                 </button>
               </>
             ) : (
               <button onClick={handleFork}
-                className="text-sm text-indigo-600 hover:text-indigo-500">
-                🔀 Fork 到我的路径
+                className="px-4 py-1.5 rounded-full bg-[#f97066] text-white text-sm hover:bg-[#e0524a] btn-press">
+                <GitFork size={14} className="inline mr-1" /> Fork 到我的路径
               </button>
             )}
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">返回</Link>
+            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700"><ArrowLeft size={14} className="inline mr-0.5" /> 返回</Link>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {editMode && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700">
-            ✏️ 编辑模式：点击节点修改，修改后记得点「💾 保存」
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm text-amber-700">
+            <Pencil size={14} className="inline mr-1" /> 编辑模式：点击节点修改，修改后记得保存
           </div>
         )}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 card-lift">
           {phases.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <p>该路径没有内容</p>
@@ -305,19 +306,19 @@ export default function PathDetailPage() {
 
       {/* Edit node modal */}
       {editingNode && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditingNode(null)}>
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold">编辑节点</h3>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in" onClick={() => setEditingNode(null)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm mx-4 w-full space-y-3 modal-enter" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold text-gray-900">编辑节点</h3>
             <input type="text" value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-              className="w-full border rounded-md px-3 py-2 text-sm" placeholder="节点名称" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="节点名称" />
             <input type="text" value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-              className="w-full border rounded-md px-3 py-2 text-sm" placeholder="描述" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="描述" />
             <input type="number" value={editForm.estimated_hours} onChange={e => setEditForm(p => ({ ...p, estimated_hours: +e.target.value }))}
-              className="w-24 border rounded-md px-3 py-2 text-sm" placeholder="小时" />
+              className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="小时" />
             <div className="flex gap-2">
-              <button onClick={handleSaveEdit} className="flex-1 py-1.5 rounded-md bg-indigo-600 text-sm text-white">确认</button>
-              <button onClick={handleAddChild} className="py-1.5 px-3 rounded-md border text-sm">+ 子节点</button>
-              <button onClick={handleDeleteNode} className="py-1.5 px-3 rounded-md border text-sm text-red-500">删除</button>
+              <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-full bg-[#f97066] text-sm text-white hover:bg-[#e0524a] btn-press">确认</button>
+              <button onClick={handleAddChild} className="py-2 px-3 rounded-full border border-gray-200 text-sm hover:bg-gray-50 btn-press"><Plus size={14} className="inline mr-0.5" /> 子节点</button>
+              <button onClick={handleDeleteNode} className="py-2 px-3 rounded-full border border-gray-200 text-sm text-red-500 hover:bg-red-50 btn-press"><Trash2 size={14} /></button>
             </div>
           </div>
         </div>

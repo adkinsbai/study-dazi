@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
+import { Clock, Users, Plus, ChevronDown, BookOpen } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────
 interface Member {
@@ -22,7 +23,7 @@ interface ProgressMap {
 
 // ─── Avatar ───────────────────────────────────────
 function Avatar({ username, avatarUrl }: { username: string; avatarUrl?: string | null }) {
-  const colors = ['bg-indigo-500','bg-emerald-500','bg-amber-500','bg-rose-500','bg-cyan-500','bg-violet-500'];
+  const colors = ['bg-[#f97066]','bg-emerald-500','bg-amber-500','bg-rose-500','bg-cyan-500','bg-violet-500'];
   const idx = username.charCodeAt(0) % colors.length;
   return (
     <div className={`w-8 h-8 rounded-full ${colors[idx]} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden ring-2 ring-white`}>
@@ -117,7 +118,7 @@ function NodeRow({
 }
 
 // ─── Group card ────────────────────────────────────
-function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string) => void }) {
+function GroupCard({ group, onNudge, index }: { group: GroupData; onNudge: (id: string) => void; index: number }) {
   const token = useAuthStore(s => s.token);
   const [expanded, setExpanded] = useState(false);
   const [detail, setDetail] = useState<{ path: { id: string; title: string; treeData: any } | null; progress: ProgressMap } | null>(null);
@@ -149,9 +150,9 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
   const phases: TreeNode[] = detail?.path?.treeData?.phases || [];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-purple-100 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl shadow-sm border border-purple-100 overflow-hidden hover:shadow-md transition-shadow card-lift stagger-item" style={{ '--i': index } as React.CSSProperties}>
       {/* Header */}
-      <button onClick={toggleExpand} className="w-full p-5 text-left hover:bg-purple-50/30 transition-colors">
+      <button onClick={toggleExpand} className="w-full p-5 text-left hover:bg-purple-50/30 transition-colors btn-press">
         <div className="flex items-start gap-4">
           {/* Avatar stack */}
           <div className="flex -space-x-3 shrink-0">
@@ -169,7 +170,7 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
             <h3 className="text-base font-bold text-gray-900">{group.name}</h3>
             <p className="text-xs text-gray-400 mt-0.5">
               {group.domain} · {group.members.length} 位搭子
-              {detail?.path && <> · 📚 {detail.path.title}</>}
+              {detail?.path && <> · <BookOpen size={12} className="text-gray-400 inline" /> {detail.path.title}</>}
             </p>
 
             {/* Member progress bars */}
@@ -189,10 +190,10 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
           {/* Action buttons */}
           <div className="flex flex-col items-end gap-2 shrink-0">
             <button onClick={(e) => { e.stopPropagation(); onNudge(group.id); }}
-              className="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
-              ⏰ 催更
+              className="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors btn-press flex items-center gap-1">
+              <Clock size={12} /> 催更
             </button>
-            <span className={`text-xs text-gray-300 transition-transform ${expanded ? 'rotate-180' : ''}`}>▼</span>
+            <span className={`text-gray-300 transition-transform ${expanded ? 'rotate-180' : ''}`}><ChevronDown size={12} /></span>
           </div>
         </div>
       </button>
@@ -207,7 +208,7 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
             </div>
           ) : !detail?.path ? (
             <div className="text-center py-10">
-              <p className="text-3xl mb-2">📋</p>
+              <BookOpen size={28} className="mx-auto mb-2 text-gray-300" />
               <p className="text-sm text-gray-500">暂无共享路径</p>
               <p className="text-xs text-gray-400 mt-1">在好友页面邀请搭子时可选择共享路径</p>
             </div>
@@ -222,8 +223,8 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
 
               {/* Path link */}
               <div className="px-5 py-2 border-b border-purple-100/50">
-                <Link href={`/paths/${detail.path.id}`} className="text-xs text-purple-600 hover:underline font-medium">
-                  📚 查看完整路径：{detail.path.title} →
+                <Link href={`/paths/${detail.path.id}`} className="text-xs text-purple-600 hover:underline font-medium flex items-center gap-1">
+                  <BookOpen size={12} /> 查看完整路径：{detail.path.title} →
                 </Link>
               </div>
 
@@ -285,9 +286,9 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 w-full space-y-4 shadow-xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-gray-900">✨ 创建学习小组</h3>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 w-full space-y-4 shadow-xl max-h-[85vh] overflow-y-auto modal-enter" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Plus size={18} className="text-purple-500" /> 创建学习小组</h3>
         {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
         <div className="space-y-3">
@@ -368,7 +369,7 @@ export default function BuddiesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#fef7f5]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-purple-300 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-gray-400 text-sm">加载搭子数据...</p>
@@ -378,26 +379,26 @@ export default function BuddiesPage() {
   }
 
   return (
-    <div>
+    <div className="bg-[#fef7f5] min-h-screen page-enter">
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Groups */}
-        {groups.map(g => (
-          <GroupCard key={g.id} group={g} onNudge={handleNudge} />
+        {groups.map((g, i) => (
+          <GroupCard key={g.id} group={g} onNudge={handleNudge} index={i} />
         ))}
 
         {/* Solo buddies */}
         {soloBuddies.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 card-lift">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">未加入小组的搭子</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {soloBuddies.map((b: any) => (
-                <div key={b.buddyId} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+              {soloBuddies.map((b: any, i: number) => (
+                <div key={b.buddyId} className="flex items-center gap-3 p-3 rounded-xl bg-[#fef7f5] card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                   <Avatar username={b.buddy.username} avatarUrl={b.buddy.avatarUrl} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{b.buddy.username}</p>
-                    <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">{b.domain}</span>
+                    <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">{b.domain}</span>
                   </div>
-                  {b.sharedPathId && <span className="text-[10px] text-gray-400">📚</span>}
+                  {b.sharedPathId && <BookOpen size={14} className="text-gray-400 shrink-0" />}
                 </div>
               ))}
             </div>
@@ -407,18 +408,18 @@ export default function BuddiesPage() {
 
         {/* Empty state */}
         {groups.length === 0 && soloBuddies.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center card-lift">
             <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🤝</span>
+              <Users size={28} className="text-purple-400" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">还没有搭子小组</h3>
             <p className="text-sm text-gray-500">邀请好友成为搭子，创建小组一起学习</p>
             <div className="flex gap-3 justify-center mt-5">
-              <Link href="/friends" className="px-5 py-2 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-500 transition-colors">
+              <Link href="/friends" className="px-5 py-2 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-500 transition-colors btn-press">
                 去邀请搭子
               </Link>
               <button onClick={() => setShowCreate(true)}
-                className="px-5 py-2 rounded-full border border-purple-300 text-purple-600 text-sm font-semibold hover:bg-purple-50 transition-colors">
+                className="px-5 py-2 rounded-full border border-purple-300 text-purple-600 text-sm font-semibold hover:bg-purple-50 transition-colors btn-press">
                 创建小组
               </button>
             </div>
