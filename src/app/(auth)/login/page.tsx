@@ -30,10 +30,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fef7f5] bg-stripe px-4 relative overflow-hidden">
-      {/* Decorative gradient blobs */}
-      <div className="absolute top-20 -left-20 w-72 h-72 rounded-full bg-[#f97066]/[0.06] blur-xl"></div>
-      <div className="absolute top-1/3 -right-16 w-56 h-56 rounded-full bg-[#f97066]/[0.05] blur-xl"></div>
-      <div className="absolute -bottom-10 left-10 w-48 h-48 rounded-full bg-[#f97066]/[0.07] blur-xl"></div>
+      {/* 装饰泡泡 */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute top-[10%] left-[5%] w-48 h-48 rounded-full bg-[#f97066]/[0.08] blur-2xl"></div>
+        <div className="absolute top-[30%] right-[8%] w-32 h-32 rounded-full bg-[#8b5cf6]/[0.06] blur-2xl"></div>
+        <div className="absolute bottom-[15%] left-[20%] w-56 h-56 rounded-full bg-[#f97066]/[0.05] blur-3xl"></div>
+        <div className="absolute top-[60%] right-[15%] w-24 h-24 rounded-full bg-[#6366f1]/[0.07] blur-xl"></div>
+        <div className="absolute bottom-[30%] left-[40%] w-40 h-40 rounded-full bg-[#f97066]/[0.04] blur-2xl"></div>
+      </div>
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center">
