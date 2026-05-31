@@ -128,20 +128,20 @@ export function CheckInWidget() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {monthSquares.squares.map(s => (
             <div
               key={s.date}
               title={s.date}
-              className={`w-3 h-3 rounded-sm ${s.checked ? 'bg-emerald-500' : 'bg-gray-100'} ${s.isToday ? 'ring-1 ring-indigo-400 ring-offset-1' : ''}`}
+              className={`w-4 h-4 rounded-sm ${s.checked ? 'bg-emerald-500' : 'bg-gray-100'} ${s.isToday ? 'ring-1 ring-indigo-400 ring-offset-1' : ''}`}
             />
           ))}
         </div>
 
         <div className="flex items-center gap-1 mt-2">
-          <div className="w-3 h-3 rounded-sm bg-gray-100" />
+          <div className="w-4 h-4 rounded-sm bg-gray-100" />
           <span className="text-[10px] text-gray-400 mr-2">未打卡</span>
-          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+          <div className="w-4 h-4 rounded-sm bg-emerald-500" />
           <span className="text-[10px] text-gray-400">已打卡</span>
         </div>
       </div>
