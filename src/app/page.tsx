@@ -22,7 +22,7 @@ export default function Home() {
   const [pendingCount, setPendingCount] = useState(0);
   const [friendCount, setFriendCount] = useState(0);
   const [buddyCount, setBuddyCount] = useState(0);
-  const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string }; sharedPathId?: string | null; sharedPathTitle?: string | null }[]>([]);
+  const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string; avatarUrl?: string | null }; sharedPathId?: string | null; sharedPathTitle?: string | null }[]>([]);
   const [notifCount, setNotifCount] = useState(0);
   const [msgCount, setMsgCount] = useState(0);
 
@@ -141,7 +141,9 @@ export default function Home() {
               </Link>
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
               <Link href="/profile" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[10px] font-bold">{user.username[0]}</span>
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden">
+                  {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" alt="" /> : user.username[0]}
+                </span>
                 <span className="text-sm text-gray-700 hidden sm:inline">{user.username}</span>
               </Link>
               <Link href="/settings" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors" title="设置">⚙️</Link>
@@ -267,8 +269,8 @@ export default function Home() {
                   <div className="divide-y divide-gray-50">
                     {buddies.map(b => (
                       <div key={b.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[#fef7f5] transition-colors">
-                        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                          {b.buddy.username[0]}
+                        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#a78bfa] flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
+                          {b.buddy.avatarUrl ? <img src={b.buddy.avatarUrl} className="w-full h-full object-cover" alt="" /> : b.buddy.username[0]}
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{b.buddy.username}</p>

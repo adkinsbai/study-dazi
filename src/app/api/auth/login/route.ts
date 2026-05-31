@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       token: accessToken,
-      user: { id: user.id, username: user.username, email: user.email, emailVerified: true },
+      user: { id: user.id, username: user.username, email: user.email, emailVerified: true, avatarUrl: user.avatarUrl },
     });
 
     response.cookies.set('refresh_token', refreshToken, {
