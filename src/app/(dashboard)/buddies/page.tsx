@@ -140,10 +140,23 @@ function GroupCard({ group, onNudge, index }: { group: GroupData; onNudge: (id: 
   };
 
   const progress = detail?.progress || {};
+
+  // Count all nodes in the path tree for accurate percentage
+  function countAllNodes(nodes: TreeNode[]): number {
+    let count = 0;
+    for (const n of nodes) {
+      count++;
+      if (n.children) count += countAllNodes(n.children);
+    }
+    return count;
+  }
+  const pathPhases: TreeNode[] = detail?.path?.treeData?.phases || [];
+  const totalPathNodes = countAllNodes(pathPhases);
+
   const memberStats = group.members.map(m => {
     const nodes = progress[m.id] || {};
     const completed = Object.values(nodes).filter(s => s.status === 'completed').length;
-    const total = Object.keys(nodes).length;
+    const total = totalPathNodes || Object.keys(nodes).length;
     return { ...m, completed, total, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
   });
 
@@ -381,6 +394,17 @@ export default function BuddiesPage() {
   return (
     <div className="bg-[#fef7f5] bg-stripe-purple min-h-screen page-enter">
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+        {/* Header with create button */}
+        {(groups.length > 0 || soloBuddies.length > 0) && (
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">搭子空间</h2>
+            <button onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors btn-press">
+              <Plus size={14} /> 创建小组
+            </button>
+          </div>
+        )}
+
         {/* Groups */}
         {groups.map((g, i) => (
           <GroupCard key={g.id} group={g} onNudge={handleNudge} index={i} />

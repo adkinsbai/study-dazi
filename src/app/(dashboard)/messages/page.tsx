@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { useBadgeStore } from '@/stores/badges';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -19,6 +20,7 @@ export default function MessagesPage() {
 function MessagesPageInner() {
   const token = useAuthStore(s => s.token);
   const myId = useAuthStore(s => s.user?.id);
+  const refreshBadges = useBadgeStore(s => s.refreshBadges);
   const params = useSearchParams();
   const [convs, setConvs] = useState<Conv[]>([]);
   const [chatUser, setChatUser] = useState<{ id: string; username: string; avatarUrl?: string | null } | null>(null);
@@ -50,6 +52,7 @@ function MessagesPageInner() {
     const res = await fetch(`/api/messages?with=${user.id}`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) { const d = await res.json(); setMsgs(d.messages || []); }
     loadConvs();
+    if (token) refreshBadges(token);
   };
 
   const sendMsg = async () => {

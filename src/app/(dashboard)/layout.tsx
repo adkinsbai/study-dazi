@@ -3,25 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth';
+import { useBadgeStore } from '@/stores/badges';
 import { MessageCircle, Bell, Settings, LogOut, Sparkles, GraduationCap } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const [notifCount, setNotifCount] = useState(0);
-  const [msgCount, setMsgCount] = useState(0);
+  const notifCount = useBadgeStore(s => s.notifCount);
+  const friendCount = useBadgeStore(s => s.friendCount);
+  const msgCount = useBadgeStore(s => s.msgCount);
+  const refreshBadges = useBadgeStore(s => s.refreshBadges);
 
   useEffect(() => {
     if (!user) return;
     const token = useAuthStore.getState().token;
-    fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.ok && r.json())
-      .then((d) => setNotifCount(d?.unreadCount || 0))
-      .catch(() => {});
-    fetch('/api/messages', { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.ok && r.json())
-      .then((d) => setMsgCount(d?.unreadCount || 0))
-      .catch(() => {});
+    if (token) refreshBadges(token);
   }, [user]);
 
   if (!user) return <>{children}</>;
@@ -51,9 +47,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-white text-[11px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity shadow-lg z-50">发现动态、资源与路径</span>
             </div>
             <div className="relative inline-flex group/tip">
-              <Link href="/friends" className="px-3 py-1.5 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors relative" aria-label={`好友${notifCount > 0 ? `，${notifCount}条新请求` : ''}`}>
+              <Link href="/friends" className="px-3 py-1.5 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors relative" aria-label={`好友${friendCount > 0 ? `，${friendCount}条新请求` : ''}`}>
                 好友
-                {notifCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">{notifCount}</span>}
+                {friendCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">{friendCount}</span>}
               </Link>
               <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-white text-[11px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity shadow-lg z-50">好友管理</span>
             </div>

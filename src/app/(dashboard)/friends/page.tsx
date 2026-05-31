@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { useBadgeStore } from '@/stores/badges';
 import Link from 'next/link';
 
 interface UserInfo { id: string; username: string; avatarUrl: string | null; }
@@ -9,6 +10,7 @@ interface FriendRequest { id: string; fromUser: UserInfo; createdAt: string; }
 
 export default function FriendsPage() {
   const token = useAuthStore(s => s.token);
+  const refreshBadges = useBadgeStore(s => s.refreshBadges);
   const [friends, setFriends] = useState<UserInfo[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,22 @@ export default function FriendsPage() {
   const [searchResults, setSearchResults] = useState<UserInfo[]>([]);
   const [searching, setSearching] = useState(false);
 
-  useEffect(() => { if (token) loadData(); }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    loadData();
+    // Mark friend-related notifications as read on visit
+    fetch('/api/notifications?only=friends', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(async (d) => {
+        if (d?.notifications?.length) {
+          await Promise.all(d.notifications.filter((n: any) => !n.read).map((n: any) =>
+            fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: n.id }) })
+          ));
+          refreshBadges(token);
+        }
+      })
+      .catch(() => {});
+  }, [token]);
 
   const loadData = async () => {
     try {

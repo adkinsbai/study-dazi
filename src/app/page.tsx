@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { useBadgeStore } from '@/stores/badges';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckInWidget } from '@/components/checkin/checkin-widget';
@@ -22,45 +23,30 @@ export default function Home() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [paths, setPaths] = useState<PathItem[]>([]);
   const [pathsLoading, setPathsLoading] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
+  const pendingCount = useBadgeStore(s => s.friendCount);
+  const notifCount = useBadgeStore(s => s.notifCount);
+  const msgCount = useBadgeStore(s => s.msgCount);
+  const refreshBadges = useBadgeStore(s => s.refreshBadges);
   const [friendCount, setFriendCount] = useState(0);
   const [buddyCount, setBuddyCount] = useState(0);
   const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string; avatarUrl?: string | null }; sharedPathId?: string | null; sharedPathTitle?: string | null }[]>([]);
-  const [notifCount, setNotifCount] = useState(0);
-  const [msgCount, setMsgCount] = useState(0);
 
   useEffect(() => {
     if (user) {
+      const token = useAuthStore.getState().token;
+      if (token) refreshBadges(token);
       checkApiKey();
       loadPaths();
-      loadPendingCount();
+      loadFriendCount();
       loadBuddyCount();
-      loadNotifCount();
-      loadMsgCount();
     }
   }, [user]);
 
-  const loadNotifCount = async () => {
-    try {
-      const token = useAuthStore.getState().token;
-      const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setNotifCount(d.unreadCount || 0); }
-    } catch { /* ignore */ }
-  };
-
-  const loadMsgCount = async () => {
-    try {
-      const token = useAuthStore.getState().token;
-      const res = await fetch('/api/messages', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setMsgCount(d.unreadCount || 0); }
-    } catch { /* ignore */ }
-  };
-
-  const loadPendingCount = async () => {
+  const loadFriendCount = async () => {
     try {
       const token = useAuthStore.getState().token;
       const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setPendingCount(d.requests?.length || 0); setFriendCount(d.friends?.length || 0); }
+      if (res.ok) { const d = await res.json(); setFriendCount(d.friends?.length || 0); }
     } catch { /* ignore */ }
   };
 

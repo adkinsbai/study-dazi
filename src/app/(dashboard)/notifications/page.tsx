@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { useBadgeStore } from '@/stores/badges';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -50,15 +51,22 @@ function getNotifColor(type: string): string {
 
 export default function NotificationsPage() {
   const token = useAuthStore(s => s.token);
+  const refreshBadges = useBadgeStore(s => s.refreshBadges);
   const router = useRouter();
   const [notifs, setNotifs] = useState<NotifItem[]>([]);
 
-  useEffect(() => { if (token) load(); }, [token]);
-
-  const load = async () => {
-    const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setNotifs(d.notifications || []); }
-  };
+  useEffect(() => {
+    if (!token) return;
+    const load = async () => {
+      const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setNotifs(d.notifications || []); }
+      // Auto-mark all as read on visit
+      await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) });
+      setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+      refreshBadges(token);
+    };
+    load();
+  }, [token]);
 
   const markOne = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

@@ -9,9 +9,18 @@ export async function GET(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: '请先登录' }, { status: 401 });
     const payload = await verifyAccessToken(auth);
 
+    const only = req.nextUrl.searchParams.get('only'); // 'friends' | 'messages' | null
+
+    let typeFilter: Record<string, unknown>;
+    if (only === 'friends') {
+      typeFilter = { in: ['friend_request', 'buddy_invite', 'group_invite'] };
+    } else {
+      typeFilter = { notIn: ['message', 'friend_request', 'buddy_invite', 'group_invite'] };
+    }
+
     const [notifs, unreadCount] = await Promise.all([
-      prisma.notification.findMany({ where: { userId: payload.sub, type: { not: 'message' } }, orderBy: { createdAt: 'desc' }, take: 30 }),
-      prisma.notification.count({ where: { userId: payload.sub, read: false, type: { not: 'message' } } }),
+      prisma.notification.findMany({ where: { userId: payload.sub, type: typeFilter }, orderBy: { createdAt: 'desc' }, take: 30 }),
+      prisma.notification.count({ where: { userId: payload.sub, read: false, type: typeFilter } }),
     ]);
 
     return NextResponse.json({ notifications: notifs, unreadCount });
