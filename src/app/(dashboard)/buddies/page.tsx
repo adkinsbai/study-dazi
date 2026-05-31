@@ -17,7 +17,7 @@ interface TreeNode {
   is_required?: boolean; node_type?: string; children?: TreeNode[];
 }
 interface ProgressMap {
-  [userId: string]: { [nodeId: string]: string };
+  [userId: string]: { [nodeId: string]: { status: string } };
 }
 
 // ─── Avatar ───────────────────────────────────────
@@ -103,7 +103,7 @@ function NodeRow({
         {/* Member status dots */}
         <div className="flex items-center gap-1 shrink-0">
           {members.map(m => (
-            <StatusDot key={m.id} status={progressMap[m.id]?.[node.id] || 'locked'} />
+            <StatusDot key={m.id} status={progressMap[m.id]?.[node.id]?.status || 'locked'} />
           ))}
         </div>
       </div>
@@ -141,7 +141,7 @@ function GroupCard({ group, onNudge }: { group: GroupData; onNudge: (id: string)
   const progress = detail?.progress || {};
   const memberStats = group.members.map(m => {
     const nodes = progress[m.id] || {};
-    const completed = Object.values(nodes).filter(s => s === 'completed').length;
+    const completed = Object.values(nodes).filter(s => s.status === 'completed').length;
     const total = Object.keys(nodes).length;
     return { ...m, completed, total, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
   });
