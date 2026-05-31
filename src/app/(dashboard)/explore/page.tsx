@@ -246,17 +246,22 @@ export default function ExplorePage() {
 
             {tab === 'paths' && (
               <>
-                {search && (
-                  <div className="flex gap-2 mb-4">
-                    <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('paths', domain)}
-                      placeholder="搜索路径..." className="flex-1 border rounded-lg px-3 py-2 text-sm" />
-                    <button onClick={() => loadTab('paths', domain)} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg">搜索</button>
-                  </div>
+                <div className="flex gap-2 mb-4">
+                  <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('paths', domain)}
+                    placeholder="搜索路径名称..." className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
+                  <button onClick={() => loadTab('paths', domain)} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500">搜索</button>
+                  {(search || domain) && (
+                    <button onClick={() => { setSearch(''); setDomain(''); loadTab('paths', ''); }} className="px-3 py-2 text-sm text-gray-400 hover:text-gray-600">清除</button>
+                  )}
+                </div>
+                {paths.length === 0 && (
+                  <p className="text-center text-gray-400 py-8">
+                    {search || domain ? '没有匹配的路径模板，试试其他关键词' : '暂无路径模板'}
+                  </p>
                 )}
-                {paths.length === 0 && <p className="text-center text-gray-400 py-8">暂无路径模板</p>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {paths.map(t => (
-                    <div key={t.id} className="bg-white rounded-xl shadow-sm p-5">
+                    <div key={t.id} className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
                       <h3 className="font-semibold">{t.title}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-600">{t.domain}</span>
