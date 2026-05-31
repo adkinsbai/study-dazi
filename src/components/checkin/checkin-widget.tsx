@@ -15,7 +15,6 @@ export function CheckInWidget() {
   const [heatmap, setHeatmap] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Month navigation: { year, month (0-11) }
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -56,40 +55,25 @@ export function CheckInWidget() {
     finally { setLoading(false); }
   };
 
-  // Build calendar for viewMonth/viewYear
-  const calendar = useMemo(() => {
+  // Build single-month tiny squares
+  const monthSquares = useMemo(() => {
     const checkinSet = new Set(heatmap.map(h => h.date));
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-    const firstDay = new Date(viewYear, viewMonth, 1);
-    const lastDay = new Date(viewYear, viewMonth + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDow = firstDay.getDay(); // 0=Sun
-
-    const weeks: (number | null)[][] = [];
-    let week: (number | null)[] = [];
-
-    // Pad leading empty cells
-    for (let i = 0; i < startDow; i++) week.push(null);
+    const squares: { date: string; checked: boolean; isToday: boolean }[] = [];
+    const todayStr = now.toISOString().slice(0, 10);
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      week.push(checkinSet.has(dateStr) ? d : -d); // positive = checked in, negative = missed
-      if (week.length === 7) {
-        weeks.push(week);
-        week = [];
-      }
-    }
-    if (week.length > 0) {
-      while (week.length < 7) week.push(null);
-      weeks.push(week);
+      squares.push({
+        date: dateStr,
+        checked: checkinSet.has(dateStr),
+        isToday: dateStr === todayStr,
+      });
     }
 
-    const checkedCount = heatmap.filter(h => {
-      const d = new Date(h.date);
-      return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
-    }).length;
-
-    return { weeks, checkedCount, daysInMonth };
+    const checkedCount = squares.filter(s => s.checked).length;
+    return { squares, checkedCount, daysInMonth };
   }, [heatmap, viewYear, viewMonth]);
 
   const prevMonth = () => {
@@ -104,7 +88,6 @@ export function CheckInWidget() {
 
   const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
   const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-  const dayHeaders = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
@@ -129,52 +112,37 @@ export function CheckInWidget() {
         </div>
       </div>
 
-      {/* Month calendar */}
+      {/* Month squares */}
       <div>
-        {/* Month header */}
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={prevMonth} className="text-sm text-gray-400 hover:text-gray-600 px-1">◀</button>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-700">
-              {viewYear}年 {monthNames[viewMonth]}
-            </p>
-            <p className="text-[10px] text-gray-400">
-              签到 {calendar.checkedCount}/{calendar.daysInMonth} 天
-            </p>
-          </div>
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={prevMonth} className="text-xs text-gray-400 hover:text-gray-600 px-1">◀</button>
+          <p className="text-xs text-gray-500">
+            {viewYear}年{monthNames[viewMonth]} · {monthSquares.checkedCount}/{monthSquares.daysInMonth}天
+          </p>
           <button
             onClick={nextMonth}
             disabled={isCurrentMonth}
-            className={`text-sm px-1 ${isCurrentMonth ? 'text-gray-200 cursor-default' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`text-xs px-1 ${isCurrentMonth ? 'text-gray-200 cursor-default' : 'text-gray-400 hover:text-gray-600'}`}
           >
             ▶
           </button>
         </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7 gap-0.5 mb-1">
-          {dayHeaders.map(d => (
-            <div key={d} className="text-center text-[10px] text-gray-400">{d}</div>
+        <div className="flex flex-wrap gap-1">
+          {monthSquares.squares.map(s => (
+            <div
+              key={s.date}
+              title={s.date}
+              className={`w-3 h-3 rounded-sm ${s.checked ? 'bg-emerald-500' : 'bg-gray-100'} ${s.isToday ? 'ring-1 ring-indigo-400 ring-offset-1' : ''}`}
+            />
           ))}
         </div>
 
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-0.5">
-          {calendar.weeks.flat().map((day, i) => (
-            <div
-              key={i}
-              className={`aspect-square rounded-sm flex items-center justify-center text-[10px] ${
-                day === null
-                  ? ''
-                  : day > 0
-                  ? 'bg-emerald-500 text-white font-medium'
-                  : 'bg-gray-100 text-gray-400'
-              }`}
-              title={day ? `${viewYear}-${viewMonth + 1}-${Math.abs(day)}` : ''}
-            >
-              {day !== null ? Math.abs(day) : ''}
-            </div>
-          ))}
+        <div className="flex items-center gap-1 mt-2">
+          <div className="w-3 h-3 rounded-sm bg-gray-100" />
+          <span className="text-[10px] text-gray-400 mr-2">未打卡</span>
+          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+          <span className="text-[10px] text-gray-400">已打卡</span>
         </div>
       </div>
     </div>
