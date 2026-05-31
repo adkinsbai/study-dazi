@@ -38,6 +38,7 @@ model User {
   sentMessages              Message[]     @relation("msgFrom")
   receivedMessages          Message[]     @relation("msgTo")
   notifications             Notification[]
+  pushSubscriptions         PushSubscription[]
 
   @@map("users")
 }
@@ -256,6 +257,19 @@ model RefreshToken {
 
   @@index([userId, revoked])
   @@map("refresh_tokens")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model PasswordResetToken {

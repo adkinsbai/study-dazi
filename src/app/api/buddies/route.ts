@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
+import { pushToUser } from '@/lib/push';
 
 // GET /api/buddies — 我的搭子列表
 export async function GET(req: NextRequest) {
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
     await prisma.notification.create({
       data: { userId: toUserId, type: 'buddy_invite', content: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子${pathHint}。请前往好友页面 → 搭子区域接受`, referenceId: payload.sub },
     });
+    pushToUser(toUserId, { title: '新的搭子邀请', body: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子`, data: { url: '/friends' } });
     return NextResponse.json({ success: true }, { status: 201 });
   } catch { return NextResponse.json({ error: '服务器错误' }, { status: 500 }); }
 }

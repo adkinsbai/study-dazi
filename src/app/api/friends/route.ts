@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/auth';
 import { logError } from '@/lib/log';
+import { pushToUser } from '@/lib/push';
 
 // GET /api/friends — 好友列表 + 待处理申请
 export async function GET(req: NextRequest) {
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
     await prisma.notification.create({
       data: { userId: toUserId, type: 'friend_request', content: `${fromUser?.username || '用户'} 请求添加你为好友`, referenceId: payload.sub },
     });
+    pushToUser(toUserId, { title: '新的好友申请', body: `${fromUser?.username || '用户'} 请求添加你为好友`, data: { url: '/friends' } });
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {

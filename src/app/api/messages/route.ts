@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
+import { pushToUser } from '@/lib/push';
 
 // GET /api/messages — 会话列表
 export async function GET(req: NextRequest) {
@@ -53,9 +54,11 @@ export async function POST(req: NextRequest) {
     const { toUserId, content } = await req.json();
     if (!toUserId || !content) return NextResponse.json({ error: '参数错误' }, { status: 400 });
 
+    const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
     const msg = await prisma.message.create({
       data: { fromUserId: payload.sub, toUserId, content },
     });
+    pushToUser(toUserId, { title: fromUser?.username || '新消息', body: content.slice(0, 100), tag: 'msg', data: { url: `/messages?with=${payload.sub}` } });
 
     return NextResponse.json({ message: msg }, { status: 201 });
   } catch { return NextResponse.json({ error: '服务器错误' }, { status: 500 }); }
