@@ -11,9 +11,12 @@ export async function GET(req: NextRequest) {
     const q = req.nextUrl.searchParams.get('q') || '';
     if (q.length < 2) return NextResponse.json({ users: [] });
 
-    // 排除自己 + 已有好友关系的用户
+    // 排除自己 + 已是好友/待处理的用户（已拒绝的可重新搜索）
     const existingRelations = await prisma.friendship.findMany({
-      where: { OR: [{ fromUserId: payload.sub }, { toUserId: payload.sub }] },
+      where: {
+        OR: [{ fromUserId: payload.sub }, { toUserId: payload.sub }],
+        status: { in: ['accepted', 'pending'] },
+      },
       select: { fromUserId: true, toUserId: true },
     });
     const excludeIds = new Set([payload.sub]);

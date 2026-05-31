@@ -39,13 +39,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 新建或更新未验证用户，验证码存入 DB
+    // 注意：update 时不修改 username，防止劫持
     const updateData: Record<string, unknown> = {
       passwordHash,
       verificationCode: code,
       verificationCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
       verificationAttempts: 0,
     };
-    if (body.username) updateData.username = body.username;
 
     await prisma.user.upsert({
       where: { email: body.email },

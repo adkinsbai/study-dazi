@@ -15,7 +15,6 @@ function VerifyForm() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const verifyEmail = useAuthStore((s) => s.verifyEmail);
-  const register = useAuthStore((s) => s.register);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,12 +41,20 @@ function VerifyForm() {
   const handleResend = async () => {
     setError('');
     try {
-      const result = await register('', email, 'ResendOnly1');
-      if (result.code) setSentCode(result.code);
-      setCountdown(60);
-    } catch (err) {
-      // 60s 冷却中，忽略
-      setCountdown(60);
+      const res = await fetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.code) setSentCode(data.code);
+        setCountdown(60);
+      } else {
+        setError(data.error || '发送失败');
+      }
+    } catch {
+      setError('网络错误，请重试');
     }
   };
 

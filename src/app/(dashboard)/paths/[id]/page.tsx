@@ -37,6 +37,15 @@ export default function PathDetailPage() {
   const [editingNode, setEditingNode] = useState<TreeNode | null>(null);
   const [editForm, setEditForm] = useState({ title: '', description: '', estimated_hours: 0 });
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  // Warn before leaving with unsaved edits
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
   // Load path + progress
   useEffect(() => {
@@ -104,6 +113,7 @@ export default function PathDetailPage() {
     const newTree = { ...path.treeData, phases: newPhases };
     setPath({ ...path, treeData: newTree });
     setEditingNode(null);
+    setDirty(true);
   };
 
   const handleDeleteNode = () => {
@@ -113,6 +123,7 @@ export default function PathDetailPage() {
     const newPhases = deleteNode(phases);
     const newTree = { ...path.treeData, phases: newPhases };
     setPath({ ...path, treeData: newTree });
+    setDirty(true);
     setEditingNode(null);
   };
 
@@ -135,13 +146,17 @@ export default function PathDetailPage() {
     if (!path) return;
     setSaving(true);
     try {
-      await fetch(`/api/paths/${id}`, {
+      const res = await fetch(`/api/paths/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ tree_data: path.treeData }),
       });
+      if (!res.ok) throw new Error('保存失败');
       setEditMode(false);
-    } catch { /* ignore */ } finally { setSaving(false); }
+      setDirty(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存失败');
+    } finally { setSaving(false); }
   };
 
   const handleFork = async () => {
@@ -242,7 +257,7 @@ export default function PathDetailPage() {
               <>
                 <button onClick={() => editMode ? handleSaveAll() : setEditMode(true)}
                   className={`text-sm ${editMode ? 'text-emerald-600' : 'text-gray-400'} hover:text-emerald-500`}>
-                  {editMode ? (saving ? '保存中...' : '💾 保存') : '✏️ 编辑'}
+                  {editMode ? (saving ? '保存中...' : dirty ? '💾 保存 *' : '💾 保存') : '✏️ 编辑'}
                 </button>
                 {editMode && (
                   <button onClick={() => setEditMode(false)} className="text-sm text-gray-400 hover:text-gray-600">取消</button>
@@ -315,6 +330,7 @@ export default function PathDetailPage() {
         progressMap={progressMap}
         onClose={() => setSelectedNode(null)}
         onProgressChange={isOwner ? handleProgressChange : () => {}}
+        readOnly={!isOwner}
       />}
     </div>
   );

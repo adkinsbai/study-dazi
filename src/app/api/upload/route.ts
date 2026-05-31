@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: '没有文件' }, { status: 400 });
-    if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 5MB' }, { status: 400 });
+    if (file.size > MAX_SIZE) return NextResponse.json({ error: '文件不能超过 2MB' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type;

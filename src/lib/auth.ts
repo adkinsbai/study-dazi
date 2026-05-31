@@ -1,10 +1,20 @@
 import { SignJWT, jwtVerify } from 'jose';
 
+const jwtSecret = process.env.JWT_SECRET;
+const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET is required in production');
+}
+if (!refreshSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_REFRESH_SECRET is required in production');
+}
+
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-secret-change-in-production-32bytes-minimum!!'
+  jwtSecret || 'dev-secret-change-in-production-32bytes-minimum!!'
 );
 const REFRESH_SECRET = new TextEncoder().encode(
-  process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production-32bytes-minimum!!'
+  refreshSecret || 'dev-refresh-secret-change-in-production-32bytes-minimum!!'
 );
 
 export interface AccessTokenPayload {

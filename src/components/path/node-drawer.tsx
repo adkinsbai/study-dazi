@@ -10,12 +10,14 @@ interface NodeDrawerProps {
   progressMap: ProgressMap;
   onClose: () => void;
   onProgressChange: (nodeId: string, status: NodeStatus) => void;
+  readOnly?: boolean;
 }
 
-export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChange }: NodeDrawerProps) {
+export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChange, readOnly }: NodeDrawerProps) {
   const token = useAuthStore((s) => s.token);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     if (node) {
@@ -29,14 +31,18 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
 
   const handleStatusChange = async (newStatus: NodeStatus) => {
     setSaving(true);
+    setSaveError('');
     try {
-      await fetch(`/api/paths/${pathId}/nodes/${node.id}/progress`, {
+      const res = await fetch(`/api/paths/${pathId}/nodes/${node.id}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (!res.ok) throw new Error('保存失败');
       onProgressChange(node.id, newStatus);
-    } catch { /* ignore */ }
+    } catch {
+      setSaveError('保存失败，请重试');
+    }
     finally { setSaving(false); }
   };
 
@@ -70,6 +76,15 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
 
         <div className="px-5 py-4 space-y-5">
           {/* Status */}
+          {readOnly ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">状态：</span>
+              <span className="px-3 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                {currentStatus === 'completed' ? '已完成' : currentStatus === 'in_progress' ? '进行中' : '未开始'}
+              </span>
+              <span className="text-[10px] text-gray-400">（仅所有者可修改）</span>
+            </div>
+          ) : (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-500">状态：</span>
             <div className="flex gap-1">
@@ -92,6 +107,8 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
             </div>
             {saving && <span className="text-xs text-gray-400">保存中...</span>}
           </div>
+          )}
+          {saveError && <p className="text-xs text-red-500">{saveError}</p>}
 
           {/* Meta */}
           <div className="flex gap-4 text-sm text-gray-500">
