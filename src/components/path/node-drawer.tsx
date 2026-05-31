@@ -115,7 +115,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
               </button>
             )}
             {saving && <span className="text-xs text-gray-400">保存中...</span>}
-          </div>}
+          </div>
           {saveError && <p className="text-xs text-red-500">{saveError}</p>}
 
           {/* Meta */}

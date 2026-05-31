@@ -107,7 +107,7 @@ body {
 }
 
 /* 页面过渡 */
-@keypageIn {
+@keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
