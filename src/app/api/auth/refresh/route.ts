@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { verifyRefreshToken, signAccessToken, signRefreshToken } from '@/lib/auth';
+import { verifyRefreshToken, signAccessToken, signRefreshToken, cleanupRefreshTokens } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+    // 清理过期/废弃 token，防止 DB 膨胀
+    cleanupRefreshTokens(user.id).catch(() => {});
 
     const response = NextResponse.json({ token: accessToken });
 

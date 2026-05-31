@@ -46,6 +46,20 @@ export async function POST(req: NextRequest) {
     const { toUserId, domain, sharedPathId } = await req.json();
     if (!toUserId || !domain) return NextResponse.json({ error: '参数错误' }, { status: 400 });
 
+    // 验证双方必须是好友
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        status: 'accepted',
+        OR: [
+          { fromUserId: payload.sub, toUserId },
+          { fromUserId: toUserId, toUserId: payload.sub },
+        ],
+      },
+    });
+    if (!friendship) {
+      return NextResponse.json({ error: '你们还不是好友，无法成为搭子' }, { status: 400 });
+    }
+
     const exist = await prisma.studyBuddy.findUnique({
       where: { fromUserId_toUserId_domain: { fromUserId: payload.sub, toUserId, domain } },
     });

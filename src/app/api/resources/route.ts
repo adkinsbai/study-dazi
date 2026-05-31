@@ -27,11 +27,18 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = {};
     if (domain) where.domain = domain;
 
-    const resources = await prisma.resource.findMany({
-      where, orderBy: { createdAt: 'desc' }, take: 50,
-      include: { user: { select: { username: true, avatarUrl: true } } },
-    });
-    return NextResponse.json({ resources });
+    const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1'));
+    const limit = Math.min(50, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit') || '20')));
+    const skip = (page - 1) * limit;
+
+    const [resources, total] = await Promise.all([
+      prisma.resource.findMany({
+        where, orderBy: { createdAt: 'desc' }, skip, take: limit,
+        include: { user: { select: { username: true, avatarUrl: true } } },
+      }),
+      prisma.resource.count({ where }),
+    ]);
+    return NextResponse.json({ resources, total, page, hasMore: skip + resources.length < total });
   } catch {
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }

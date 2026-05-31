@@ -150,24 +150,19 @@ export default function NewPathPage() {
         throw new Error(data.error || '生成失败');
       }
       const data = await res.json();
-      console.log('[NewPath] API response keys:', Object.keys(data));
-      console.log('[NewPath] data.phases type:', typeof data.phases, Array.isArray(data.phases));
       // DeepSeek 可能返回数字 id，统一转字符串
       let phases: Phase[] = [];
       try {
         const raw = Array.isArray(data.phases) ? data.phases : [];
-        console.log('[NewPath] raw phases count:', raw.length);
         phases = raw.map((p: Record<string, unknown>) => ({
           ...p,
           id: String(p.id ?? ''),
         })) as Phase[];
-      } catch (mapErr) {
-        console.error('[NewPath] phases mapping error:', mapErr);
+      } catch {
         setError('数据格式异常，请重试');
         setLoading(false);
         return;
       }
-      console.log('[NewPath] setting phases:', phases.length, 'step: framework');
       setPhases(phases);
       setStep('framework');
       finishProgress();
@@ -303,16 +298,7 @@ export default function NewPathPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-900">生成学习路径</h1>
-          <button onClick={() => router.push('/')} className="text-sm text-gray-500 hover:text-gray-700">
-            返回
-          </button>
-        </div>
-      </header>
-
+    <div>
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
@@ -406,13 +392,9 @@ export default function NewPathPage() {
         {/* Step 2: Framework Review */}
         {step === 'framework' && (
           <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded px-3 py-1.5 text-xs text-yellow-700 font-mono">
-              DEBUG: step={step} | phases.length={phases.length} | loading={String(loading)} | error={error ? 'YES' : 'none'}
-            </div>
             <h2 className="text-lg font-semibold">学习框架</h2>
             <p className="text-sm text-gray-500">
               点击展开每个阶段的子节点
-              <span className="ml-2 text-xs text-gray-300">({phases.length} 个阶段, step={step})</span>
             </p>
 
             {phases.length === 0 && !loading && (

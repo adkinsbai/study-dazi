@@ -14,13 +14,26 @@ const RegisterSchema = z.object({
   password: z
     .string()
     .min(8, '密码至少 8 位')
-    .regex(/[a-zA-Z]/, '密码需包含至少一个字母')
+    .regex(/[a-z]/, '密码需包含至少一个小写字母')
+    .regex(/[A-Z]/, '密码需包含至少一个大写字母')
     .regex(/[0-9]/, '密码需包含至少一个数字'),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = RegisterSchema.parse(await req.json());
+
+    // 清理过期未验证的旧账号（避免验证码永久残留在 DB）
+    const expiredUnverified = await prisma.user.findFirst({
+      where: {
+        email: body.email,
+        emailVerified: false,
+        verificationCodeExpiresAt: { lt: new Date() },
+      },
+    });
+    if (expiredUnverified) {
+      await prisma.user.delete({ where: { id: expiredUnverified.id } });
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: body.email } });
     if (existing?.emailVerified) {

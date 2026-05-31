@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { signAccessToken, signRefreshToken } from '@/lib/auth';
+import { signAccessToken, signRefreshToken, cleanupRefreshTokens } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -12,6 +13,17 @@ const LoginSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = LoginSchema.parse(await req.json());
+
+    // 速率限制：同一邮箱 15 分钟最多 10 次尝试
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const rateKey = `login:${ip}:${body.email}`;
+    const { allowed, retryAfterSec } = checkRateLimit(rateKey, 10, 15 * 60 * 1000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `登录尝试过于频繁，请 ${retryAfterSec} 秒后再试` },
+        { status: 429 },
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { email: body.email } });
     if (!user) {
@@ -40,6 +52,8 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+    // 清理过期/废弃 token，防止 DB 膨胀
+    cleanupRefreshTokens(user.id).catch(() => {});
 
     const response = NextResponse.json({
       token: accessToken,

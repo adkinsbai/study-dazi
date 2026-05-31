@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { signAccessToken, signRefreshToken } from '@/lib/auth';
+import { signAccessToken, signRefreshToken, cleanupRefreshTokens } from '@/lib/auth';
 
 const VerifySchema = z.object({
   email: z.string().email(),
@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+    cleanupRefreshTokens(updatedUser.id).catch(() => {});
 
     const response = NextResponse.json({
       token: accessToken,

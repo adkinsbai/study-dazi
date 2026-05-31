@@ -45,6 +45,46 @@ const iconColors: Record<NodeStatus, string> = {
   completed: 'text-emerald-500',
 };
 
+// ─── dependency helpers ──────────────────────────────
+
+/** 判断节点是否为必修（兼容 phase 的 is_required 和子节点的 node_type） */
+function isRequiredNode(node: TreeNode): boolean {
+  if (node.is_required !== undefined) return node.is_required;
+  return node.node_type === 'required';
+}
+
+/** 计算节点真实状态：自己的进度 > 祖先链 > 同级排序 */
+function computeNodeStatus(
+  node: TreeNode,
+  progressMap: ProgressMap,
+  ancestorNodes: TreeNode[],
+  siblingIndex: number,
+  siblings: TreeNode[],
+): NodeStatus {
+  // 1. 自己的进度优先
+  const own = progressMap[node.id];
+  if (own?.status === 'completed') return 'completed';
+  if (own?.status === 'in_progress') return 'in_progress';
+
+  // 2. 所有必修祖先必须完成
+  for (const ancestor of ancestorNodes) {
+    if (!isRequiredNode(ancestor)) continue;
+    const ap = progressMap[ancestor.id];
+    if (!ap || ap.status !== 'completed') return 'locked';
+  }
+
+  // 3. 所有排在前面的必修同级必须完成
+  for (let i = 0; i < siblingIndex; i++) {
+    const sibling = siblings[i];
+    if (!isRequiredNode(sibling)) continue;
+    const sp = progressMap[sibling.id];
+    if (!sp || sp.status !== 'completed') return 'locked';
+  }
+
+  // 4. 前置条件全部满足
+  return 'unlocked';
+}
+
 // ─── component ────────────────────────────────────────
 interface TreeRendererProps {
   nodes: TreeNode[];
@@ -52,6 +92,8 @@ interface TreeRendererProps {
   progressMap: ProgressMap;
   onNodeClick: (node: TreeNode) => void;
   defaultExpanded?: boolean;
+  /** 当前节点层级以上的所有祖先节点（用于依赖解锁判断） */
+  ancestorNodes?: TreeNode[];
 }
 
 export function TreeRenderer({
@@ -60,6 +102,7 @@ export function TreeRenderer({
   progressMap,
   onNodeClick,
   defaultExpanded = true,
+  ancestorNodes = [],
 }: TreeRendererProps) {
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>(() => {
     // 默认展开：第一层 + 包含进行中节点的链
@@ -76,16 +119,12 @@ export function TreeRenderer({
     return init;
   });
 
-  const getStatus = (node: TreeNode): NodeStatus => {
-    return progressMap[node.id]?.status || 'unlocked';
-  };
-
   if (!nodes.length) return null;
 
   return (
     <div className="tree-branch" style={{ paddingLeft: level > 0 ? 24 : 0 }}>
       {nodes.map((node, i) => {
-        const status = getStatus(node);
+        const status = computeNodeStatus(node, progressMap, ancestorNodes, i, nodes);
         const hasChildren = node.children && node.children.length > 0;
         const isExpanded = expanded[node.id] !== false;
         const isLast = i === nodes.length - 1;
@@ -151,6 +190,7 @@ export function TreeRenderer({
                 progressMap={progressMap}
                 onNodeClick={onNodeClick}
                 defaultExpanded={false}
+                ancestorNodes={[...ancestorNodes, node]}
               />
             )}
           </div>
