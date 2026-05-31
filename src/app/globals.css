@@ -27,21 +27,23 @@ body {
 
 /* ─── 背景装饰 ─── */
 
-/* 流动渐变色带 — Stripe 风格 */
+/* 流动渐变色带 — 覆盖整个视口 */
 .bg-stripe {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(249, 112, 102, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(249, 112, 102, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse 120% 80% at 10% 20%, rgba(249, 112, 102, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 70% at 90% 60%, rgba(249, 112, 102, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 90% at 50% 90%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 70% 10%, rgba(249, 112, 102, 0.06) 0%, transparent 40%);
   background-attachment: fixed;
 }
 
 /* 紫色流动渐变 — 搭子页面专用 */
 .bg-stripe-purple {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(139, 92, 246, 0.09) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(249, 112, 102, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse 120% 80% at 10% 20%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 70% at 90% 60%, rgba(139, 92, 246, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 90% at 50% 90%, rgba(249, 112, 102, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 70% 10%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
   background-attachment: fixed;
 }
 
