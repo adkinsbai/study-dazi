@@ -20,6 +20,14 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Collect all user IDs that are already in any of my groups
+    const groupedUserIds = new Set<string>();
+    for (const g of groups) {
+      for (const m of g.members) {
+        groupedUserIds.add(m.userId);
+      }
+    }
+
     // Also get buddy-only relationships (1-on-1 without a group)
     const soloBuddies = await prisma.studyBuddy.findMany({
       where: {
@@ -30,6 +38,12 @@ export async function GET(req: NextRequest) {
         fromUser: { select: { id: true, username: true, avatarUrl: true } },
         toUser: { select: { id: true, username: true, avatarUrl: true } },
       },
+    });
+
+    // Filter out buddies already in groups
+    const filteredSolo = soloBuddies.filter(b => {
+      const buddyId = b.fromUserId === payload.sub ? b.toUserId : b.fromUserId;
+      return !groupedUserIds.has(buddyId);
     });
 
     const result = groups.map(g => ({
@@ -50,7 +64,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       groups: result,
-      soloBuddies: soloBuddies.map(b => ({
+      soloBuddies: filteredSolo.map(b => ({
         buddyId: b.id,
         domain: b.domain,
         sharedPathId: b.sharedPathId,
