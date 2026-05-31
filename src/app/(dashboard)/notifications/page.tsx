@@ -16,6 +16,8 @@ function getNotifLink(n: NotifItem): string | null {
       return '/explore';
     case 'comment':
       return n.referenceId === 'explore' ? '/explore' : n.referenceId ? `/paths/${n.referenceId}` : null;
+    case 'nudge':
+      return '/buddies';
     default:
       return null;
   }
@@ -27,6 +29,7 @@ function getNotifIcon(type: string): string {
     case 'buddy_invite': return '🤝';
     case 'like': return '❤️';
     case 'comment': return '💬';
+    case 'nudge': return '⏰';
     default: return '🔔';
   }
 }

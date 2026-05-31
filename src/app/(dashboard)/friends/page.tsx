@@ -234,7 +234,10 @@ function BuddySection() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700">搭子 ({buddies.length})</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-700">搭子 ({buddies.length})</h3>
+        {buddies.length > 0 && <Link href="/buddies" className="text-xs text-purple-600 hover:text-purple-500">看板 →</Link>}
+      </div>
 
       {buddies.map(b => (
         <div key={b.id} className="flex items-center gap-2 text-sm">

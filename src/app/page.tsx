@@ -249,8 +249,8 @@ export default function Home() {
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-semibold text-gray-900">🤝 搭子空间</h3>
-                  <Link href="/friends" className="text-sm text-indigo-600 hover:text-indigo-500">
-                    查看全部
+                  <Link href="/buddies" className="text-sm text-indigo-600 hover:text-indigo-500">
+                    查看看板 →
                   </Link>
                 </div>
                 <div className="space-y-2">
