@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/stores/auth';
 
 interface HeatmapDay {
@@ -15,13 +15,18 @@ export function CheckInWidget() {
   const [heatmap, setHeatmap] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Month navigation: { year, month (0-11) }
+  const now = new Date();
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+
   useEffect(() => {
     if (token) loadData();
   }, [token]);
 
   const loadData = async () => {
     try {
-      const res = await fetch('/api/checkins', {
+      const res = await fetch(`/api/checkins?year=${now.getFullYear()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -29,7 +34,6 @@ export function CheckInWidget() {
       setStreak(data.streak || 0);
       setHeatmap(data.heatmap || []);
 
-      // Check if today is in heatmap
       const today = new Date().toISOString().slice(0, 10);
       setTodayDone(data.heatmap?.some((d: HeatmapDay) => d.date === today));
     } catch { /* ignore */ }
@@ -46,27 +50,61 @@ export function CheckInWidget() {
         const data = await res.json();
         setStreak(data.streak || 0);
         setTodayDone(true);
-        loadData(); // refresh heatmap
+        loadData();
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
 
-  // Build heatmap data for last 3 months
-  const today = new Date();
-  const days: { date: string; level: number }[] = [];
-  for (let i = 90; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const found = heatmap.find((h) => h.date === dateStr);
-    days.push({
-      date: dateStr,
-      level: found ? Math.min(4, Math.ceil((found.duration || 30) / 30)) : 0,
-    });
-  }
+  // Build calendar for viewMonth/viewYear
+  const calendar = useMemo(() => {
+    const checkinSet = new Set(heatmap.map(h => h.date));
 
-  const levelColors = ['bg-gray-100', 'bg-emerald-200', 'bg-emerald-400', 'bg-emerald-500', 'bg-emerald-700'];
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const lastDay = new Date(viewYear, viewMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDow = firstDay.getDay(); // 0=Sun
+
+    const weeks: (number | null)[][] = [];
+    let week: (number | null)[] = [];
+
+    // Pad leading empty cells
+    for (let i = 0; i < startDow; i++) week.push(null);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      week.push(checkinSet.has(dateStr) ? d : -d); // positive = checked in, negative = missed
+      if (week.length === 7) {
+        weeks.push(week);
+        week = [];
+      }
+    }
+    if (week.length > 0) {
+      while (week.length < 7) week.push(null);
+      weeks.push(week);
+    }
+
+    const checkedCount = heatmap.filter(h => {
+      const d = new Date(h.date);
+      return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+    }).length;
+
+    return { weeks, checkedCount, daysInMonth };
+  }, [heatmap, viewYear, viewMonth]);
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
+    else setViewMonth(viewMonth - 1);
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
+    else setViewMonth(viewMonth + 1);
+  };
+
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const dayHeaders = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
@@ -91,24 +129,52 @@ export function CheckInWidget() {
         </div>
       </div>
 
-      {/* Heatmap */}
+      {/* Month calendar */}
       <div>
-        <p className="text-xs text-gray-400 mb-2">过去 3 个月</p>
-        <div className="flex flex-wrap gap-1">
-          {days.map((d) => (
-            <div
-              key={d.date}
-              title={`${d.date}${d.level > 0 ? ` · ${d.level * 30}min` : ''}`}
-              className={`w-3 h-3 rounded-sm ${levelColors[d.level]}`}
-            />
+        {/* Month header */}
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={prevMonth} className="text-sm text-gray-400 hover:text-gray-600 px-1">◀</button>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-700">
+              {viewYear}年 {monthNames[viewMonth]}
+            </p>
+            <p className="text-[10px] text-gray-400">
+              签到 {calendar.checkedCount}/{calendar.daysInMonth} 天
+            </p>
+          </div>
+          <button
+            onClick={nextMonth}
+            disabled={isCurrentMonth}
+            className={`text-sm px-1 ${isCurrentMonth ? 'text-gray-200 cursor-default' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            ▶
+          </button>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 gap-0.5 mb-1">
+          {dayHeaders.map(d => (
+            <div key={d} className="text-center text-[10px] text-gray-400">{d}</div>
           ))}
         </div>
-        <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-400">
-          <span>少</span>
-          {levelColors.map((c, i) => (
-            <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-0.5">
+          {calendar.weeks.flat().map((day, i) => (
+            <div
+              key={i}
+              className={`aspect-square rounded-sm flex items-center justify-center text-[10px] ${
+                day === null
+                  ? ''
+                  : day > 0
+                  ? 'bg-emerald-500 text-white font-medium'
+                  : 'bg-gray-100 text-gray-400'
+              }`}
+              title={day ? `${viewYear}-${viewMonth + 1}-${Math.abs(day)}` : ''}
+            >
+              {day !== null ? Math.abs(day) : ''}
+            </div>
           ))}
-          <span>多</span>
         </div>
       </div>
     </div>
