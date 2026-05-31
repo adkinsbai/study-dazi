@@ -1,15 +1,16 @@
 import prisma from '@/lib/prisma';
+import type webpush from 'web-push';
 
-let webpush: any = null;
-async function getWebPush() {
-  if (webpush) return webpush;
+let _webpush: typeof webpush | null = null;
+async function getWebPush(): Promise<typeof webpush> {
+  if (_webpush) return _webpush;
   const wp = await import('web-push');
   wp.setVapidDetails(
     'mailto:noreply@studydazi.top',
     process.env.VAPID_PUBLIC_KEY || '',
     process.env.VAPID_PRIVATE_KEY || '',
   );
-  webpush = wp;
+  _webpush = wp;
   return wp;
 }
 
@@ -41,9 +42,10 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
         },
         message,
       );
-    } catch (err: any) {
-      // 410 Gone — 订阅已过期，清理
-      if (err?.statusCode === 410 || err?.statusCode === 404) {
+    } catch (err) {
+      // 410 Gone / 404 — 订阅已过期，清理
+      const status = (err as { statusCode?: number })?.statusCode;
+      if (status === 410 || status === 404) {
         await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
       }
     }
@@ -52,5 +54,5 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
 
 /** 在关键社交事件后异步推送（不阻塞主流程） */
 export function pushToUser(userId: string, payload: PushPayload) {
-  sendPushToUser(userId, payload).catch(() => {});
+  void sendPushToUser(userId, payload);
 }
