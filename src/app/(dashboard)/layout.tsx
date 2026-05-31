@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-[#fef7f5]">
+    <div className="min-h-screen bg-[#fef7f5] bg-dots bg-warm-glow">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-lg font-bold text-gray-900 hover:text-gray-700 transition-colors">

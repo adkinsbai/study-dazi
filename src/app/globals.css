@@ -25,6 +25,58 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* ─── 背景装饰 ─── */
+
+/* 细微点阵纹理 */
+.bg-dots {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* 暖色渐变叠加（极淡） */
+.bg-warm-glow {
+  position: relative;
+}
+.bg-warm-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: linear-gradient(180deg, rgba(249, 112, 102, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-warm-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 紫色渐变叠加（搭子页面用） */
+.bg-purple-glow {
+  position: relative;
+}
+.bg-purple-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-purple-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-dots { background-image: none; }
+}
+
 /* ─── 动画工具类 ─── */
 
 /* 卡片 hover 微浮起 */

@@ -60,7 +60,7 @@ function MessagesPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef7f5] flex flex-col">
+    <div className="min-h-screen bg-[#fef7f5] bg-dots flex flex-col">
       <header className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] shrink-0">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
