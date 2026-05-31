@@ -46,7 +46,7 @@ function ResetForm() {
     return (
       <div className="text-center text-gray-500 space-y-4">
         <p>无效的重置链接</p>
-        <Link href="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-500">
+        <Link href="/forgot-password" className="text-sm text-[#f97066] hover:text-[#e0524a] transition-colors">
           重新申请
         </Link>
       </div>
@@ -80,13 +80,13 @@ function ResetForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
             placeholder="至少 8 位，含字母和数字"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs transition-colors"
           >
             {showPassword ? '隐藏' : '显示'}
           </button>
@@ -103,7 +103,7 @@ function ResetForm() {
           required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
           placeholder="再次输入密码"
         />
       </div>
@@ -111,7 +111,7 @@ function ResetForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+        className="w-full rounded-full bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50 transition-colors"
       >
         {loading ? '重置中...' : '重置密码'}
       </button>
@@ -121,13 +121,21 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#fef7f5] px-4 relative overflow-hidden">
+      {/* Decorative gradient blobs */}
+      <div className="absolute top-20 -left-20 w-72 h-72 rounded-full bg-[#f97066]/[0.06] blur-xl"></div>
+      <div className="absolute top-1/3 -right-16 w-56 h-56 rounded-full bg-[#f97066]/[0.05] blur-xl"></div>
+      <div className="absolute -bottom-10 left-10 w-48 h-48 rounded-full bg-[#f97066]/[0.07] blur-xl"></div>
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">重置密码</h1>
+          <div className="inline-flex items-center gap-2 mb-2">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] flex items-center justify-center text-white text-sm font-bold">D</span>
+            <h1 className="text-2xl font-bold text-gray-900">重置密码</h1>
+          </div>
           <p className="text-sm text-gray-500 mt-1">设置你的新密码</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-6 rounded-2xl shadow-sm">
           <Suspense fallback={<div className="text-center text-gray-500">加载中...</div>}>
             <ResetForm />
           </Suspense>

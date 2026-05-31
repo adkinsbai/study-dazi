@@ -14,7 +14,7 @@ export function ProgressBar({ progress, status }: ProgressBarProps) {
       </div>
       <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700 ease-out"
+          className="h-full bg-gradient-to-r from-[#f97066] to-[#e0524a] rounded-full transition-all duration-700 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>

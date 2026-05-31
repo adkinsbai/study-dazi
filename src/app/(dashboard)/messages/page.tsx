@@ -81,9 +81,9 @@ function MessagesPageInner() {
           <div className="flex-1 overflow-y-auto">
             {convs.map(c => (
               <button key={c.user.id} onClick={() => openChat(c.user)}
-                className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50 transition-colors ${chatUser?.id === c.user.id ? 'bg-indigo-50 border-l-2 border-l-indigo-500' : ''}`}>
+                className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50 transition-colors ${chatUser?.id === c.user.id ? 'bg-[#fef4f3]' : ''}`}>
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-medium text-indigo-600 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm font-medium text-[#f97066] overflow-hidden">
                     {c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" /> : c.user.username[0]?.toUpperCase()}
                   </div>
                   {c.unread > 0 && (
@@ -117,7 +117,7 @@ function MessagesPageInner() {
               {/* Chat header */}
               <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0">
                 <button onClick={() => setChatUser(null)} className="md:hidden text-sm text-gray-500 mr-1">←</button>
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-medium text-indigo-600 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm font-medium text-[#f97066] shrink-0">
                   {chatUser.username[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{chatUser.username}</span>
@@ -135,7 +135,7 @@ function MessagesPageInner() {
                       {!isMine && (
                         <span className="text-[10px] text-gray-400 mb-0.5 ml-1">{m.fromUser.username}</span>
                       )}
-                      <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${isMine ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm'}`}>
+                      <div className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${isMine ? 'bg-[#f97066] text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm'}`}>
                         {m.content}
                       </div>
                       <span className="text-[10px] text-gray-300 mt-0.5 mx-1">
@@ -150,7 +150,7 @@ function MessagesPageInner() {
               <div className="bg-white border-t border-gray-200 p-3 flex gap-2 shrink-0">
                 <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}
                   placeholder="输入消息..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
-                <button onClick={sendMsg} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500 transition-colors">发送</button>
+                <button onClick={sendMsg} className="px-4 py-2 bg-[#f97066] text-white text-sm rounded-lg hover:bg-[#e0524a] transition-colors">发送</button>
               </div>
             </>
           ) : (

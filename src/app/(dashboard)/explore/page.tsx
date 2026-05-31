@@ -130,7 +130,7 @@ export default function ExplorePage() {
         <div className="max-w-4xl mx-auto flex">
           {[{ id: 'posts', label: '动态' }, { id: 'resources', label: '资源' }, { id: 'paths', label: '路径' }].map(t => (
             <button key={t.id} onClick={() => switchTab(t.id as Tab)}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t.id ? 'border-[#f97066] text-[#f97066]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               {t.label}
             </button>
           ))}
@@ -141,7 +141,7 @@ export default function ExplorePage() {
         <div className="flex flex-wrap gap-2 mb-4">
           {suggestedDomains.map(d => (
             <button key={d} onClick={() => { setDomain(domain === d ? '' : d); loadTab(tab, domain === d ? '' : d); }}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${domain === d ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`px-3 py-1 rounded-full text-xs font-medium ${domain === d ? 'bg-[#f97066] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {d}
             </button>
           ))}
@@ -160,10 +160,10 @@ export default function ExplorePage() {
                 </button>
                 {posts.filter(p => !showLiked || likedPostIds.has(p.id)).length === 0 && <p className="text-center text-gray-400 py-12">暂无动态</p>}
                 {posts.filter(p => !showLiked || likedPostIds.has(p.id)).map(p => (
-                  <div key={p.id} className="bg-white rounded-xl shadow-sm p-4">
+                  <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Link href={`/profile/${p.user.id}`} className="flex items-center gap-2 hover:underline">
-                        <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs overflow-hidden">
+                        <div className="w-6 h-6 rounded-full bg-[#fde8e6] flex items-center justify-center text-xs overflow-hidden">
                           {p.user.avatarUrl ? <img src={p.user.avatarUrl} className="w-full h-full object-cover" /> : p.user.username[0]}
                         </div>
                         <span className="text-sm font-medium text-gray-700">{p.user.username}</span>
@@ -189,16 +189,16 @@ export default function ExplorePage() {
                 <div className="flex items-center gap-2">
                   <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('resources', domain)}
                     placeholder="搜索资源名称..." className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
-                  <button onClick={() => loadTab('resources', domain)} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500">搜索</button>
+                  <button onClick={() => loadTab('resources', domain)} className="px-4 py-2 bg-[#f97066] text-white text-sm rounded-lg hover:bg-[#e0524a]">搜索</button>
                   <button onClick={() => { setShowResourceForm(!showResourceForm); setResError(''); }}
-                    className="text-sm text-indigo-600 hover:text-indigo-500 shrink-0">+ 分享资源</button>
+                    className="text-sm text-[#f97066] hover:text-[#e0524a] shrink-0">+ 分享资源</button>
                   <button onClick={() => setShowLiked(!showLiked)}
                     className={`text-xs shrink-0 ${showLiked ? 'text-red-500' : 'text-gray-400'} hover:text-red-500`}>
                     {showLiked ? '❤️' : '🤍'}
                   </button>
                 </div>
                 {showResourceForm && (
-                  <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
+                  <div className="bg-white rounded-2xl shadow-sm p-4 space-y-2">
                     {resError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{resError}</p>}
                     <input value={resForm.title} onChange={e => setResForm(p => ({ ...p, title: e.target.value }))}
                       placeholder="资源名称 *" className="w-full border rounded-md px-3 py-2 text-sm" />
@@ -214,17 +214,17 @@ export default function ExplorePage() {
                       placeholder="笔记/说明（可选）" rows={3}
                       className="w-full border rounded-md px-3 py-2 text-sm resize-none" />
                     <button onClick={handleAddResource} disabled={resSubmitting}
-                      className="px-4 py-1.5 rounded-md bg-indigo-600 text-sm text-white hover:bg-indigo-500 disabled:opacity-50">
+                      className="px-4 py-1.5 rounded-md bg-[#f97066] text-sm text-white hover:bg-[#e0524a] disabled:opacity-50">
                       {resSubmitting ? '提交中...' : '提交'}
                     </button>
                   </div>
                 )}
                 {resources.filter(r => !showLiked || likedResourceIds.has(r.id)).length === 0 && <p className="text-center text-gray-400 py-8">暂无资源</p>}
                 {resources.filter(r => !showLiked || likedResourceIds.has(r.id)).map(r => (
-                  <div key={r.id} className="bg-white rounded-xl shadow-sm p-4">
+                  <div key={r.id} className="bg-white rounded-2xl shadow-sm p-4">
                     <div className="flex items-center gap-2">
                       {r.url ? (
-                        <a href={r.url} target="_blank" rel="noopener" className="text-sm font-medium text-indigo-600 hover:underline">{r.title}</a>
+                        <a href={r.url} target="_blank" rel="noopener" className="text-sm font-medium text-[#f97066] hover:underline">{r.title}</a>
                       ) : <span className="text-sm font-medium">{r.title}</span>}
                       <span className="text-xs px-2 py-0.5 rounded bg-gray-100">{r.domain}</span>
                       <div className="flex-1" />
@@ -247,7 +247,7 @@ export default function ExplorePage() {
                 <div className="flex gap-2 mb-4">
                   <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('paths', domain)}
                     placeholder="搜索路径名称..." className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
-                  <button onClick={() => loadTab('paths', domain)} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500">搜索</button>
+                  <button onClick={() => loadTab('paths', domain)} className="px-4 py-2 bg-[#f97066] text-white text-sm rounded-lg hover:bg-[#e0524a]">搜索</button>
                   {(search || domain) && (
                     <button onClick={() => { setSearch(''); setDomain(''); loadTab('paths', ''); }} className="px-3 py-2 text-sm text-gray-400 hover:text-gray-600">清除</button>
                   )}
@@ -259,14 +259,14 @@ export default function ExplorePage() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {paths.map(t => (
-                    <div key={t.id} className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div key={t.id} className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow">
                       <h3 className="font-semibold">{t.title}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-600">{t.domain}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-[#fef4f3] text-[#f97066]">{t.domain}</span>
                         <span className="text-xs text-gray-400">Fork {t.forkCount}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2 text-xs text-gray-500"><Link href={`/profile/${t.user.id}`}>{t.user.username}</Link></div>
-                      <button onClick={() => handleFork(t.id)} className="mt-3 w-full py-1.5 rounded-md border border-indigo-300 text-sm text-indigo-600 hover:bg-indigo-50">🔀 Fork</button>
+                      <button onClick={() => handleFork(t.id)} className="mt-3 w-full py-1.5 rounded-md border border-[#f97066] text-sm text-[#f97066] hover:bg-[#fef4f3]">🔀 Fork</button>
                       <InlineComments targetId={t.id} type="path" />
                     </div>
                   ))}
@@ -309,7 +309,7 @@ function InlineComments({ targetId, type }: { targetId: string; type: string }) 
 
   return (
     <div className="mt-2 border-t pt-2">
-      <button onClick={() => { setShow(!show); if (!show) load(); }} className="text-xs text-gray-400 hover:text-indigo-600">
+      <button onClick={() => { setShow(!show); if (!show) load(); }} className="text-xs text-gray-400 hover:text-[#f97066]">
         💬 评论 {comments.length > 0 && `(${comments.length})`}
       </button>
       {show && (
@@ -320,7 +320,7 @@ function InlineComments({ targetId, type }: { targetId: string; type: string }) 
           <div className="flex gap-1">
             <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder="写评论..." className="flex-1 border rounded px-2 py-1 text-xs" />
-            <button onClick={handleSubmit} disabled={submitting} className="px-2 py-1 bg-indigo-600 text-white text-xs rounded">发送</button>
+            <button onClick={handleSubmit} disabled={submitting} className="px-2 py-1 bg-[#f97066] text-white text-xs rounded">发送</button>
           </div>
         </div>
       )}

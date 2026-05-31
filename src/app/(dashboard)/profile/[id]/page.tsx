@@ -87,9 +87,9 @@ export default function FriendProfilePage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+            <div className="w-14 h-14 rounded-full bg-[#fde8e6] flex items-center justify-center text-xl shrink-0 overflow-hidden">
               {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" /> : user.username[0]?.toUpperCase()}
             </div>
             <div className="flex-1">
@@ -98,7 +98,7 @@ export default function FriendProfilePage() {
             </div>
             <div className="flex gap-2 shrink-0">
               <button onClick={openBuddy} className="text-xs px-2 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100">🤝 邀请搭子</button>
-              <Link href={`/messages?with=${user.id}`} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
+              <Link href={`/messages?with=${user.id}`} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function FriendProfilePage() {
         {/* Buddy invite modal */}
         {showBuddy && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowBuddy(false)}>
-            <div className="bg-white rounded-xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
               <h3 className="font-semibold text-sm">邀请 {user.username} 成为搭子</h3>
               {buddyError && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{buddyError}</p>}
               {buddySuccess && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
@@ -125,7 +125,7 @@ export default function FriendProfilePage() {
 
         {/* Learning paths */}
         {paths.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">学习路径 ({paths.length})</h3>
             <div className="space-y-1">
               {paths.map(p => (
@@ -141,13 +141,13 @@ export default function FriendProfilePage() {
 
         {/* Resources */}
         {resources.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">分享的资源 ({resources.length})</h3>
             <div className="space-y-2">
               {resources.map(r => (
                 <div key={r.id} className="py-1">
                   {r.url ? (
-                    <a href={r.url} target="_blank" rel="noopener" className="text-sm font-medium text-indigo-600 hover:underline">{r.title}</a>
+                    <a href={r.url} target="_blank" rel="noopener" className="text-sm font-medium text-[#f97066] hover:underline">{r.title}</a>
                   ) : <span className="text-sm font-medium">{r.title}</span>}
                   <span className="ml-2 text-xs bg-gray-100 px-1.5 py-0.5 rounded">{r.domain}</span>
                   {r.notes && <p className="text-xs text-gray-500 mt-0.5">{r.notes.substring(0, 100)}</p>}
@@ -162,7 +162,7 @@ export default function FriendProfilePage() {
           <h3 className="text-sm font-semibold text-gray-700">动态</h3>
           {posts.length === 0 && <p className="text-center text-gray-400 text-sm py-4">暂无动态</p>}
           {posts.map(post => (
-            <div key={post.id} className="bg-white rounded-xl shadow-sm p-4">
+            <div key={post.id} className="bg-white rounded-2xl shadow-sm p-4">
               <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString('zh-CN')}</span>
               {post.content && <p className="text-sm text-gray-800 mt-2 whitespace-pre-wrap break-words">{post.content}</p>}
               {post.markdown && <div className="mt-2"><MarkdownView text={post.markdown} /></div>}

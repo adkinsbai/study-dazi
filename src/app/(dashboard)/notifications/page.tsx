@@ -76,7 +76,7 @@ export default function NotificationsPage() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold">通知{unreadCount > 0 && ` (${unreadCount})`}</h1>
           <div className="flex gap-3">
-            {unreadCount > 0 && <button onClick={markAll} className="text-xs text-indigo-600">全部已读</button>}
+            {unreadCount > 0 && <button onClick={markAll} className="text-xs text-[#f97066] transition-colors">全部已读</button>}
             <Link href="/" className="text-sm text-gray-500">返回</Link>
           </div>
         </div>
@@ -88,14 +88,14 @@ export default function NotificationsPage() {
             return (
               <div key={n.id}
                 onClick={() => handleClick(n)}
-                className={`p-3 rounded-lg flex items-start gap-3 transition-colors ${n.read ? 'bg-white hover:bg-gray-50' : 'bg-indigo-50 border-l-2 border-indigo-400 hover:bg-indigo-100'} ${link ? 'cursor-pointer' : ''}`}>
+                className={`p-3 rounded-lg flex items-start gap-3 transition-colors ${n.read ? 'bg-white hover:bg-gray-50' : 'bg-[#fef4f3] hover:bg-[#fde8e6]'} ${link ? 'cursor-pointer' : ''}`}>
                 <span className="text-lg shrink-0 mt-0.5">{getNotifIcon(n.type)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{n.content}</p>
                   <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('zh-CN')}</p>
                 </div>
                 {!n.read && (
-                  <button onClick={(e) => markOne(e, n.id)} className="text-xs text-indigo-500 hover:text-indigo-700 shrink-0 mt-0.5">标记已读</button>
+                  <button onClick={(e) => markOne(e, n.id)} className="text-xs text-[#f97066] hover:text-[#e0524a] transition-colors shrink-0 mt-0.5">标记已读</button>
                 )}
                 {link && (
                   <span className="text-xs text-gray-300 shrink-0 mt-0.5">→</span>

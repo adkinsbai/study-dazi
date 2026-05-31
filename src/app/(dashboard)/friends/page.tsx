@@ -73,14 +73,14 @@ export default function FriendsPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {/* Search */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4">
           <div className="flex gap-2">
             <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="搜索用户名（至少2个字符）"
               className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
             <button onClick={handleSearch} disabled={searching}
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-sm text-white hover:bg-indigo-500 disabled:opacity-50">
+              className="px-4 py-2 rounded-lg bg-[#f97066] text-sm text-white hover:bg-[#e0524a] disabled:opacity-50">
               {searching ? '...' : '搜索'}
             </button>
           </div>
@@ -88,13 +88,13 @@ export default function FriendsPage() {
             <div className="mt-3 space-y-1">
               {searchResults.map(u => (
                 <div key={u.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-50">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm shrink-0 overflow-hidden">
                     {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover" /> : u.username[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm font-medium flex-1">{u.username}</span>
                   <button onClick={() => handleAdd(u.id)}
-                    className="text-xs text-indigo-600 hover:text-indigo-500">+ 添加</button>
-                  <Link href={`/messages?with=${u.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
+                    className="text-xs text-[#f97066] hover:text-[#e0524a]">+ 添加</button>
+                  <Link href={`/messages?with=${u.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
                 </div>
               ))}
             </div>
@@ -103,7 +103,7 @@ export default function FriendsPage() {
 
         {/* Pending requests */}
         {requests.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">好友申请 ({requests.length})</h3>
             <div className="space-y-2">
               {requests.map(r => (
@@ -124,7 +124,7 @@ export default function FriendsPage() {
         <BuddySection />
 
         {/* Friend list */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">我的好友 ({friends.length})</h3>
           {friends.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-4">还没有好友，搜索并添加吧</p>
@@ -133,13 +133,13 @@ export default function FriendsPage() {
               {friends.map(f => (
                 <div key={f.id} className="flex items-center gap-2 py-2 px-2 rounded hover:bg-gray-50">
                   <Link href={`/profile/${f.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm shrink-0 overflow-hidden">
                       {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" /> : f.username[0]?.toUpperCase()}
                     </div>
                     <span className="text-sm font-medium">{f.username}</span>
                   </Link>
                   <BuddyInviteBtn friendId={f.id} />
-                  <Link href={`/messages?with=${f.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600">💬 私信</Link>
+                  <Link href={`/messages?with=${f.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
                 </div>
               ))}
             </div>
@@ -192,7 +192,7 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
       <button onClick={open} className="text-xs text-purple-500 hover:text-purple-700">🤝 搭子</button>
       {show && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShow(false)}>
-          <div className="bg-white rounded-xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-sm">邀请成为搭子</h3>
             {error && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{error}</p>}
             {success && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
@@ -233,7 +233,7 @@ function BuddySection() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+    <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">搭子 ({buddies.length})</h3>
         <Link href="/buddies" className="text-xs text-purple-600 hover:text-purple-500">小组看板 →</Link>

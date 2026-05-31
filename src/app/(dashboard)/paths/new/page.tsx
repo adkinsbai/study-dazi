@@ -318,7 +318,7 @@ export default function NewPathPage() {
 
         {/* Step 1: Intent */}
         {step === 'intent' && (
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 className="text-lg font-semibold">你想学什么？</h2>
 
             <div>
@@ -341,7 +341,7 @@ export default function NewPathPage() {
                     onClick={() => setLevel(l)}
                     className={`px-4 py-2 rounded-md text-sm font-medium ${
                       level === l
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-[#f97066] text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -374,7 +374,7 @@ export default function NewPathPage() {
             </div>
 
             {loading && (
-              <div className="bg-indigo-50 rounded-lg p-4">
+              <div className="bg-[#fef4f3] rounded-lg p-4">
                 <ProgressBar progress={progress} status={progressStatus} />
               </div>
             )}
@@ -382,7 +382,7 @@ export default function NewPathPage() {
             <button
               onClick={handleGenerateFramework}
               disabled={!domain.trim() || loading}
-              className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="w-full rounded-md bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50"
             >
               {loading ? '⏳ AI 正在生成学习路径...' : '✨ 生成学习框架'}
             </button>
@@ -391,7 +391,7 @@ export default function NewPathPage() {
 
         {/* Step 2: Framework Review */}
         {step === 'framework' && (
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 className="text-lg font-semibold">学习框架</h2>
             <p className="text-sm text-gray-500">
               点击展开每个阶段的子节点
@@ -410,7 +410,7 @@ export default function NewPathPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded ${phase.is_required ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded ${phase.is_required ? 'bg-[#fde8e6] text-[#e0524a]' : 'bg-gray-100 text-gray-500'}`}>
                           {phase.is_required ? '必修' : '可选'}
                         </span>
                         <h3 className="font-medium">{phase.title}</h3>
@@ -423,12 +423,12 @@ export default function NewPathPage() {
 
                   {/* Expanded children */}
                   {visibleExpanded.has(phase.id) && expandedPhases[phase.id] && (
-                    <div className="mt-3 ml-4 border-l-2 border-indigo-100 pl-4 space-y-2">
+                    <div className="mt-3 ml-4 border-l-2 border-[#fde8e6] pl-4 space-y-2">
                       {expandedPhases[phase.id].map((node) => (
                         <div key={node.id} className="text-sm">
                           <div className="flex items-center gap-2">
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              node.node_type === 'required' ? 'bg-indigo-50 text-indigo-600' :
+                              node.node_type === 'required' ? 'bg-[#fef4f3] text-[#f97066]' :
                               node.node_type === 'optional' ? 'bg-amber-50 text-amber-600' :
                               'bg-purple-50 text-purple-600'
                             }`}>
@@ -446,7 +446,7 @@ export default function NewPathPage() {
 
                   {/* 展开中进度条 */}
                   {expandingPhase === phase.id && (
-                    <div className="mt-3 bg-indigo-50 rounded-lg p-3">
+                    <div className="mt-3 bg-[#fef4f3] rounded-lg p-3">
                       <ProgressBar progress={nodeProgress} status={nodeProgressStatus} />
                     </div>
                   )}
@@ -456,7 +456,7 @@ export default function NewPathPage() {
                     <button
                       onClick={() => handleExpandPhase(phase.id, phase.title)}
                       disabled={expandingPhase === phase.id || loading}
-                      className="mt-3 text-sm text-indigo-600 hover:text-indigo-500 font-medium disabled:opacity-50"
+                      className="mt-3 text-sm text-[#f97066] hover:text-[#e0524a] font-medium disabled:opacity-50"
                     >
                       {expandingPhase === phase.id
                         ? '⏳ AI 正在生成子节点...'
@@ -481,14 +481,14 @@ export default function NewPathPage() {
             </div>
 
             {loading && (
-              <div className="bg-indigo-50 rounded-lg p-4">
+              <div className="bg-[#fef4f3] rounded-lg p-4">
                 <ProgressBar progress={progress} status={progressStatus} />
               </div>
             )}
 
             <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
               <input type="checkbox" checked={publicTemplate} onChange={e => setPublicTemplate(e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                className="rounded border-gray-300 text-[#f97066] focus:ring-indigo-500" />
               公开为模板（其他人可以在广场 Fork）
             </label>
 
@@ -503,7 +503,7 @@ export default function NewPathPage() {
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="flex-1 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                className="flex-1 rounded-md bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50"
               >
                 {loading ? '⏳ 正在生成并保存...' : '💾 保存路径'}
               </button>
