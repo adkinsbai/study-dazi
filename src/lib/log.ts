@@ -1,6 +1,6 @@
 /**
  * 条件打印：仅开发环境输出，生产环境静默。
- * 避免 catch { /* ignore */ } 完全掩盖 bug。
+ * 避免 catch 块完全静默掩盖 bug。
  */
 
 const isDev = process.env.NODE_ENV !== 'production';
