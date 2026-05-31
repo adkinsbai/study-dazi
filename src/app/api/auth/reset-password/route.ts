@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { resetTokens } from '@/app/api/auth/forgot-password/route';
 
 const ResetSchema = z.object({
   token: z.string().min(1),
@@ -17,9 +17,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = ResetSchema.parse(await req.json());
 
-    const entry = resetTokens.get(body.token);
-    if (!entry || Date.now() > entry.expiresAt) {
-      resetTokens.delete(body.token);
+    const tokenHash = crypto.createHash('sha256').update(body.token).digest('hex');
+
+    const entry = await prisma.passwordResetToken.findFirst({
+      where: { tokenHash, used: false },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!entry || new Date() > entry.expiresAt) {
+      if (entry) {
+        await prisma.passwordResetToken.update({ where: { id: entry.id }, data: { used: true } });
+      }
       return NextResponse.json({ error: '重置链接已过期，请重新申请' }, { status: 400 });
     }
 
@@ -29,13 +37,14 @@ export async function POST(req: NextRequest) {
       data: { passwordHash },
     });
 
-    // 作废所有 refresh token
+    // Invalidate all refresh tokens for this user
     await prisma.refreshToken.updateMany({
       where: { user: { email: entry.email }, revoked: false },
       data: { revoked: true },
     });
 
-    resetTokens.delete(body.token);
+    // Mark token as used
+    await prisma.passwordResetToken.update({ where: { id: entry.id }, data: { used: true } });
 
     return NextResponse.json({ success: true, message: '密码已重置，请重新登录' });
   } catch (err) {

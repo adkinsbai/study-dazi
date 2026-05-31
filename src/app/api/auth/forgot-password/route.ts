@@ -8,23 +8,31 @@ const ForgotSchema = z.object({
   email: z.string().email(),
 });
 
-// 内存存储重置 token（key: token, value: { email, expiresAt }）
-const resetTokens = new Map<string, { email: string; expiresAt: number }>();
-
 export async function POST(req: NextRequest) {
   try {
     const body = ForgotSchema.parse(await req.json());
 
     const user = await prisma.user.findUnique({ where: { email: body.email } });
     if (!user) {
-      // 不暴露用户是否存在，统一返回 success
       return NextResponse.json({ success: true, message: '如果该邮箱已注册，重置链接已发送' });
     }
 
+    // Generate token and store hash in DB
     const token = crypto.randomBytes(32).toString('hex');
-    resetTokens.set(token, {
-      email: body.email,
-      expiresAt: Date.now() + 30 * 60 * 1000, // 30分钟
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Expire old tokens for this email
+    await prisma.passwordResetToken.updateMany({
+      where: { email: body.email, used: false },
+      data: { used: true },
+    });
+
+    await prisma.passwordResetToken.create({
+      data: {
+        email: body.email,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+      },
     });
 
     const resetUrl = `${req.nextUrl.origin}/reset-password?token=${token}`;
@@ -38,5 +46,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }
-
-export { resetTokens };
