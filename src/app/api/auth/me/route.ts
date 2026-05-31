@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const payload = await verifyAccessToken(auth);
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, username: true, email: true, emailVerified: true },
+      select: { id: true, username: true, email: true, emailVerified: true, avatarUrl: true },
     });
 
     if (!user) return NextResponse.json({ error: '用户不存在' }, { status: 404 });
