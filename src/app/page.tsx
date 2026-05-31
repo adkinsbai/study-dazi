@@ -134,6 +134,7 @@ export default function Home() {
                 生成路径
               </Link>
               <Link href="/explore" className="text-sm text-gray-500 hover:text-indigo-600">广场</Link>
+              <Link href="/leaderboard" className="text-sm text-gray-500 hover:text-indigo-600">🏆</Link>
               <Link href="/friends" className="text-sm text-gray-500 hover:text-indigo-600 relative">
                 好友
                 {pendingCount > 0 && (
