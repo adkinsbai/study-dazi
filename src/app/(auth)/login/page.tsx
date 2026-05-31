@@ -30,15 +30,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fef7f5] bg-stripe px-4 relative overflow-hidden">
-      {/* 装饰泡泡 — 白色光斑叠加在渐变上 */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden mix-blend-soft-light" aria-hidden="true">
-        <div className="absolute top-[10%] left-[5%] w-64 h-64 rounded-full bg-white/40 blur-3xl"></div>
-        <div className="absolute top-[35%] right-[10%] w-48 h-48 rounded-full bg-white/30 blur-2xl"></div>
-        <div className="absolute bottom-[20%] left-[20%] w-72 h-72 rounded-full bg-white/25 blur-3xl"></div>
-        <div className="absolute top-[60%] right-[18%] w-40 h-40 rounded-full bg-white/35 blur-2xl"></div>
-        <div className="absolute bottom-[35%] left-[42%] w-56 h-56 rounded-full bg-white/20 blur-3xl"></div>
-      </div>
-
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center">
           <div className="inline-flex items-center gap-2 mb-2">

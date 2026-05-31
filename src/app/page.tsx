@@ -106,16 +106,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#fef7f5] bg-stripe relative overflow-hidden page-enter">
-      {/* 装饰泡泡 — 白色光斑叠加在渐变上 */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden mix-blend-soft-light" aria-hidden="true">
-        <div className="absolute top-[8%] left-[3%] w-72 h-72 rounded-full bg-white/40 blur-3xl"></div>
-        <div className="absolute top-[35%] right-[8%] w-52 h-52 rounded-full bg-white/30 blur-2xl"></div>
-        <div className="absolute bottom-[25%] left-[18%] w-80 h-80 rounded-full bg-white/25 blur-3xl"></div>
-        <div className="absolute top-[60%] right-[22%] w-44 h-44 rounded-full bg-white/35 blur-2xl"></div>
-        <div className="absolute bottom-[8%] right-[30%] w-60 h-60 rounded-full bg-white/20 blur-3xl"></div>
-        <div className="absolute top-[80%] left-[45%] w-40 h-40 rounded-full bg-white/30 blur-2xl"></div>
-      </div>
-
       {/* 顶部导航 */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
