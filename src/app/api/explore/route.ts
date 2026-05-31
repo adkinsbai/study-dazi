@@ -21,7 +21,19 @@ export async function GET(req: NextRequest) {
         }),
         prisma.post.count(),
       ]);
-      return NextResponse.json({ posts, total, page, hasMore: skip + posts.length < total });
+      const postsWithMeta = await Promise.all(posts.map(async (p) => {
+        const [likeCount, commentCount, topComment] = await Promise.all([
+          prisma.like.count({ where: { postId: p.id } }),
+          prisma.nodeComment.count({ where: { pathId: 'explore', nodeId: `post-${p.id}` } }),
+          prisma.nodeComment.findFirst({
+            where: { pathId: 'explore', nodeId: `post-${p.id}` },
+            orderBy: { createdAt: 'desc' },
+            include: { user: { select: { username: true } } },
+          }),
+        ]);
+        return { ...p, likeCount, commentCount, topComment };
+      }));
+      return NextResponse.json({ posts: postsWithMeta, total, page, hasMore: skip + posts.length < total });
     }
 
     if (type === 'resources') {
@@ -37,7 +49,19 @@ export async function GET(req: NextRequest) {
         }),
         prisma.resource.count({ where }),
       ]);
-      return NextResponse.json({ resources, total, page, hasMore: skip + resources.length < total });
+      const resourcesWithMeta = await Promise.all(resources.map(async (r) => {
+        const [likeCount, commentCount, topComment] = await Promise.all([
+          prisma.like.count({ where: { resourceId: r.id } }),
+          prisma.nodeComment.count({ where: { pathId: 'explore', nodeId: `resource-${r.id}` } }),
+          prisma.nodeComment.findFirst({
+            where: { pathId: 'explore', nodeId: `resource-${r.id}` },
+            orderBy: { createdAt: 'desc' },
+            include: { user: { select: { username: true } } },
+          }),
+        ]);
+        return { ...r, likeCount, commentCount, topComment };
+      }));
+      return NextResponse.json({ resources: resourcesWithMeta, total, page, hasMore: skip + resources.length < total });
     }
 
     return NextResponse.json({ error: '未知类型' }, { status: 400 });

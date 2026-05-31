@@ -31,11 +31,40 @@ export async function POST(req: NextRequest) {
       data: { userId: payload.sub, pathId, nodeId, content },
       include: { user: { select: { id: true, username: true, avatarUrl: true } } },
     });
-    const path = await prisma.learningPath.findUnique({ where: { id: pathId }, select: { userId: true } });
-    if (path && path.userId !== payload.sub) {
-      const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
-      await prisma.notification.create({ data: { userId: path.userId, type: 'comment', content: `${fromUser?.username} 评论了你的学习路径`, referenceId: pathId } });
+
+    const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
+
+    // Send notification to content owner for explore comments
+    if (pathId === 'explore') {
+      // nodeId format: "post-xxx", "resource-xxx", "path-xxx"
+      const [type, ...rest] = nodeId.split('-');
+      const refId = rest.join('-');
+      let ownerId: string | null = null;
+      let refType = type;
+      if (type === 'post') {
+        const post = await prisma.post.findUnique({ where: { id: refId }, select: { userId: true } });
+        ownerId = post?.userId ?? null;
+      } else if (type === 'resource') {
+        const res = await prisma.resource.findUnique({ where: { id: refId }, select: { userId: true } });
+        ownerId = res?.userId ?? null;
+      } else if (type === 'path') {
+        const p = await prisma.learningPath.findUnique({ where: { id: refId }, select: { userId: true } });
+        ownerId = p?.userId ?? null;
+      }
+      if (ownerId && ownerId !== payload.sub) {
+        const typeLabel = type === 'post' ? '动态' : type === 'resource' ? '资源' : '路径';
+        await prisma.notification.create({
+          data: { userId: ownerId, type: 'comment', content: `${fromUser?.username} 评论了你的${typeLabel}`, referenceId: `explore:${nodeId}` },
+        });
+      }
+    } else {
+      // Regular path comment notification
+      const path = await prisma.learningPath.findUnique({ where: { id: pathId }, select: { userId: true } });
+      if (path && path.userId !== payload.sub) {
+        await prisma.notification.create({ data: { userId: path.userId, type: 'comment', content: `${fromUser?.username} 评论了你的学习路径`, referenceId: pathId } });
+      }
     }
+
     return NextResponse.json({ comment }, { status: 201 });
   } catch { return NextResponse.json({ error: '服务器错误' }, { status: 500 }); }
 }

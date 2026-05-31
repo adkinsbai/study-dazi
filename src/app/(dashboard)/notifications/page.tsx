@@ -11,8 +11,13 @@ function getNotifLink(n: NotifItem): string | null {
   switch (n.type) {
     case 'friend_request':
     case 'buddy_invite': return '/friends';
-    case 'like': return '/explore';
-    case 'comment': return n.referenceId === 'explore' ? '/explore' : n.referenceId ? `/paths/${n.referenceId}` : null;
+    case 'like':
+      if (n.referenceId) return '/explore';
+      return null;
+    case 'comment':
+      if (!n.referenceId) return null;
+      if (n.referenceId.startsWith('explore:')) return '/explore';
+      return `/paths/${n.referenceId}`;
     case 'nudge':
     case 'group_invite': return '/buddies';
     default: return null;

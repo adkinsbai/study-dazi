@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface ExploreComment { id: string; content: string; createdAt: string; user: { username: string; avatarUrl: string | null }; }
+interface TopComment { content: string; user: { username: string } }
 type Tab = 'posts' | 'resources' | 'paths';
 
 interface PostItem { id: string; content: string; images: string[]; markdown?: string; createdAt: string;
-  user: { id: string; username: string; avatarUrl: string | null }; }
+  user: { id: string; username: string; avatarUrl: string | null }; likeCount?: number; commentCount?: number; topComment?: TopComment | null; }
 interface ResourceItem { id: string; title: string; url?: string; fileUrl?: string; fileName?: string; notes?: string; domain: string; description?: string; createdAt: string;
-  user: { id: string; username: string; avatarUrl: string | null }; }
+  user: { id: string; username: string; avatarUrl: string | null }; likeCount?: number; commentCount?: number; topComment?: TopComment | null; }
 interface PathItem { id: string; title: string; domain: string; forkCount: number; createdAt: string;
-  user: { id: string; username: string; avatarUrl: string | null }; }
+  user: { id: string; username: string; avatarUrl: string | null }; commentCount?: number; topComment?: TopComment | null; }
 
 export default function ExplorePage() {
   const token = useAuthStore(s => s.token);
@@ -60,8 +61,14 @@ export default function ExplorePage() {
       } else {
         await fetch('/api/likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ postId, resourceId }) });
       }
-      if (postId) setLikedPostIds(prev => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
-      if (resourceId) setLikedResourceIds(prev => { const n = new Set(prev); isLiked ? n.delete(resourceId!) : n.add(resourceId!); return n; });
+      if (postId) {
+        setLikedPostIds(prev => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likeCount: (p.likeCount ?? 0) + (isLiked ? -1 : 1) } : p));
+      }
+      if (resourceId) {
+        setLikedResourceIds(prev => { const n = new Set(prev); isLiked ? n.delete(resourceId!) : n.add(resourceId!); return n; });
+        setResources(prev => prev.map(r => r.id === resourceId ? { ...r, likeCount: (r.likeCount ?? 0) + (isLiked ? -1 : 1) } : r));
+      }
     } catch { /* ignore */ }
   };
 
@@ -188,10 +195,13 @@ export default function ExplorePage() {
                         <Link href={`/profile/${p.user.id}`} className="text-sm font-semibold text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">{p.user.username}</Link>
                         <p className="text-[11px] text-gray-400">{new Date(p.createdAt).toLocaleDateString('zh-CN')}</p>
                       </div>
-                      <button onClick={() => toggleLike(p.id, undefined)}
-                        className={`p-1.5 rounded-full transition-colors ${likedPostIds.has(p.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
-                        {likedPostIds.has(p.id) ? '❤️' : '🤍'}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => toggleLike(p.id, undefined)}
+                          className={`p-1.5 rounded-full transition-colors ${likedPostIds.has(p.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
+                          {likedPostIds.has(p.id) ? '❤️' : '🤍'}
+                        </button>
+                        {(p.likeCount ?? 0) > 0 && <span className="text-xs text-gray-400">{p.likeCount}</span>}
+                      </div>
                     </div>
 
                     {/* 内容 */}
@@ -213,7 +223,7 @@ export default function ExplorePage() {
 
                     {/* 评论区 */}
                     <div className="border-t border-gray-50">
-                      <InlineComments targetId={p.id} type="post" />
+                      <InlineComments targetId={p.id} type="post" commentCount={p.commentCount} topComment={p.topComment} />
                     </div>
                   </article>
                 ))}
@@ -291,14 +301,17 @@ export default function ExplorePage() {
                             </div>
                           )}
                         </div>
-                        <button onClick={() => toggleLike(undefined, r.id)}
-                          className={`p-1.5 rounded-full transition-colors shrink-0 ${likedResourceIds.has(r.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
-                          {likedResourceIds.has(r.id) ? '❤️' : '🤍'}
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => toggleLike(undefined, r.id)}
+                            className={`p-1.5 rounded-full transition-colors ${likedResourceIds.has(r.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
+                            {likedResourceIds.has(r.id) ? '❤️' : '🤍'}
+                          </button>
+                          {(r.likeCount ?? 0) > 0 && <span className="text-xs text-gray-400">{r.likeCount}</span>}
+                        </div>
                       </div>
                     </div>
                     <div className="border-t border-gray-50">
-                      <InlineComments targetId={r.id} type="resource" />
+                      <InlineComments targetId={r.id} type="resource" commentCount={r.commentCount} topComment={r.topComment} />
                     </div>
                   </article>
                 ))}
@@ -335,6 +348,7 @@ export default function ExplorePage() {
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs bg-[#fde8e6] text-[#e0524a] px-2 py-0.5 rounded-full">{t.domain}</span>
                               <span className="text-xs text-gray-400">Fork {t.forkCount}</span>
+                              {(t.commentCount ?? 0) > 0 && <span className="text-xs text-gray-400">💬 {t.commentCount}</span>}
                             </div>
                           </div>
                         </Link>
@@ -349,7 +363,7 @@ export default function ExplorePage() {
                         </button>
                       </div>
                       <div className="border-t border-gray-50">
-                        <InlineComments targetId={t.id} type="path" />
+                        <InlineComments targetId={t.id} type="path" commentCount={t.commentCount} topComment={t.topComment} />
                       </div>
                     </article>
                   ))}
@@ -364,7 +378,7 @@ export default function ExplorePage() {
 }
 
 // ─── 评论组件 ──────────────────────────────
-function InlineComments({ targetId, type }: { targetId: string; type: string }) {
+function InlineComments({ targetId, type, commentCount: initialCount, topComment }: { targetId: string; type: string; commentCount?: number; topComment?: TopComment | null }) {
   const token = useAuthStore(s => s.token);
   const [show, setShow] = useState(false);
   const [comments, setComments] = useState<ExploreComment[]>([]);
@@ -390,11 +404,19 @@ function InlineComments({ targetId, type }: { targetId: string; type: string }) 
     } catch { /* ignore */ } finally { setSubmitting(false); }
   };
 
+  const count = comments.length > 0 ? comments.length : initialCount ?? 0;
+
   return (
     <div className="px-5 py-3">
+      {/* Top comment preview when collapsed */}
+      {!show && topComment && (
+        <p className="text-xs text-gray-500 mb-2 pl-0.5 truncate">
+          <span className="font-medium text-gray-700">{topComment.user.username}：</span>{topComment.content}
+        </p>
+      )}
       <button onClick={() => { setShow(!show); if (!show) load(); }}
         className="text-xs text-gray-400 hover:text-[#f97066] transition-colors flex items-center gap-1.5">
-        <span>💬</span> {comments.length > 0 ? `${comments.length} 条评论` : '评论'}
+        <span>💬</span> {count > 0 ? `${count} 条评论` : '评论'}
       </button>
       {show && (
         <div className="mt-3 space-y-2.5">

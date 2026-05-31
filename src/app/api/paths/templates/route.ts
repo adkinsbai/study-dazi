@@ -20,7 +20,20 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ templates });
+    // Attach comment counts and top comment
+    const templatesWithMeta = await Promise.all(templates.map(async (t) => {
+      const [commentCount, topComment] = await Promise.all([
+        prisma.nodeComment.count({ where: { pathId: 'explore', nodeId: `path-${t.id}` } }),
+        prisma.nodeComment.findFirst({
+          where: { pathId: 'explore', nodeId: `path-${t.id}` },
+          orderBy: { createdAt: 'desc' },
+          include: { user: { select: { username: true } } },
+        }),
+      ]);
+      return { ...t, commentCount, topComment };
+    }));
+
+    return NextResponse.json({ templates: templatesWithMeta });
   } catch {
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
