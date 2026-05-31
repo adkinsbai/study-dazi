@@ -32,6 +32,8 @@ model User {
   likes                     Like[]
   sentBuddies               StudyBuddy[] @relation("buddyFrom")
   receivedBuddies           StudyBuddy[] @relation("buddyTo")
+  createdGroups             BuddyGroup[]  @relation("groupCreator")
+  groupMemberships          BuddyGroupMember[]
   comments                  NodeComment[]
   sentMessages              Message[]     @relation("msgFrom")
   receivedMessages          Message[]     @relation("msgTo")
@@ -156,6 +158,32 @@ model StudyBuddy {
 
   @@unique([fromUserId, toUserId, domain])
   @@map("study_buddies")
+}
+
+model BuddyGroup {
+  id           String             @id @default(uuid())
+  name         String
+  domain       String
+  sharedPathId String?            @map("shared_path_id")
+  createdBy    String             @map("created_by")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  creator      User               @relation("groupCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members      BuddyGroupMember[]
+
+  @@map("buddy_groups")
+}
+
+model BuddyGroupMember {
+  id       String     @id @default(uuid())
+  groupId  String     @map("group_id")
+  userId   String     @map("user_id")
+  role     String     @default("member")
+  joinedAt DateTime   @default(now()) @map("joined_at")
+  group    BuddyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("buddy_group_members")
 }
 
 model Message {
