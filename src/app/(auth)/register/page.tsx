@@ -100,7 +100,7 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
-                placeholder="至少 8 位，含字母和数字"
+                placeholder="至少 8 位，含大小写字母和数字"
               />
               <button
                 type="button"
@@ -110,7 +110,18 @@ export default function RegisterPage() {
                 {showPassword ? '隐藏' : '显示'}
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-1">至少 8 位，包含字母和数字</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+              {[
+                { label: '8位以上', ok: password.length >= 8 },
+                { label: '含小写字母', ok: /[a-z]/.test(password) },
+                { label: '含大写字母', ok: /[A-Z]/.test(password) },
+                { label: '含数字', ok: /[0-9]/.test(password) },
+              ].map(r => (
+                <span key={r.label} className={`text-[11px] flex items-center gap-0.5 ${password.length === 0 ? 'text-gray-400' : r.ok ? 'text-emerald-500' : 'text-gray-400'}`}>
+                  {password.length > 0 && (r.ok ? '✓' : '·')} {r.label}
+                </span>
+              ))}
+            </div>
           </div>
 
           <div>
