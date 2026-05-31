@@ -26,42 +26,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+    <div className="min-h-screen bg-[#fafaf9]">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-gray-900 hover:text-indigo-600">
+          <Link href="/" className="text-lg font-bold text-gray-900 hover:text-[#f97066] transition-colors">
             Study-DaZi
           </Link>
-          <nav className="flex items-center gap-3 text-sm">
-            <Link href="/paths/new" className="text-indigo-600 hover:text-indigo-500">生成路径</Link>
-            <Link href="/explore" className="text-gray-500 hover:text-indigo-600">广场</Link>
-            <Link href="/friends" className="text-gray-500 hover:text-indigo-600 relative">
+          <nav className="flex items-center gap-3 text-sm" role="navigation" aria-label="主导航">
+            <Link href="/paths/new" className="font-medium text-[#f97066] hover:text-[#e0524a] transition-colors">生成路径</Link>
+            <Link href="/explore" className="text-gray-500 hover:text-[#f97066] transition-colors">广场</Link>
+            <Link href="/friends" className="text-gray-500 hover:text-[#f97066] transition-colors relative" aria-label={`好友${notifCount > 0 ? `，${notifCount}条新请求` : ''}`}>
               好友
               {notifCount > 0 && (
-                <span className="absolute -top-2 -right-4 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-2 -right-4 bg-[#ef4444] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">
                   {notifCount}
                 </span>
               )}
             </Link>
-            <Link href="/messages" className="text-gray-500 hover:text-indigo-600 relative">
-              💬
+            <Link href="/messages" className="text-gray-500 hover:text-[#f97066] transition-colors relative" aria-label={`消息${msgCount > 0 ? `，${msgCount}条未读` : ''}`}>
+              <span aria-hidden="true">💬</span>
               {msgCount > 0 && (
-                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-2 -right-3 bg-[#ef4444] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">
                   {msgCount}
                 </span>
               )}
             </Link>
-            <Link href="/notifications" className="text-gray-500 hover:text-indigo-600 relative">
-              🔔
+            <Link href="/notifications" className="text-gray-500 hover:text-[#f97066] transition-colors relative" aria-label={`通知${notifCount > 0 ? `，${notifCount}条未读` : ''}`}>
+              <span aria-hidden="true">🔔</span>
               {notifCount > 0 && (
-                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-2 -right-3 bg-[#ef4444] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">
                   {notifCount}
                 </span>
               )}
             </Link>
-            <Link href="/profile" className="text-gray-500 hover:text-indigo-600">{user.username}</Link>
-            <Link href="/settings" className="text-gray-500 hover:text-gray-700">设置</Link>
-            <button onClick={logout} className="text-gray-400 hover:text-gray-600">退出</button>
+            <Link href="/profile" className="text-gray-600 hover:text-[#f97066] transition-colors">{user.username}</Link>
+            <Link href="/settings" className="text-gray-500 hover:text-gray-700 transition-colors">设置</Link>
+            <button onClick={logout} className="text-gray-400 hover:text-gray-600 transition-colors">退出</button>
           </nav>
         </div>
       </header>
