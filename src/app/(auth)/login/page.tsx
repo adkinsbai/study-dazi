@@ -97,10 +97,10 @@ export default function LoginPage() {
           </button>
 
           <div className="flex justify-between text-sm">
-            <Link href="/register" className="text-[#f97066] hover:text-[#e0524a] transition-colors">
+            <Link href="/register" className="text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">
               注册账号
             </Link>
-            <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700 transition-colors">
+            <Link href="/forgot-password" className="text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">
               忘记密码？
             </Link>
           </div>

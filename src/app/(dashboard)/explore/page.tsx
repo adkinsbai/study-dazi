@@ -180,12 +180,12 @@ export default function ExplorePage() {
                     {/* 用户信息 */}
                     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
                       <Link href={`/profile/${p.user.id}`} className="shrink-0">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#f97066] to-[#f97066]/60 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
                           {p.user.avatarUrl ? <img src={p.user.avatarUrl} className="w-full h-full object-cover" /> : p.user.username[0]}
                         </div>
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <Link href={`/profile/${p.user.id}`} className="text-sm font-semibold text-gray-900 hover:text-[#f97066] transition-colors">{p.user.username}</Link>
+                        <Link href={`/profile/${p.user.id}`} className="text-sm font-semibold text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">{p.user.username}</Link>
                         <p className="text-[11px] text-gray-400">{new Date(p.createdAt).toLocaleDateString('zh-CN')}</p>
                       </div>
                       <button onClick={() => toggleLike(p.id, undefined)}
@@ -278,7 +278,7 @@ export default function ExplorePage() {
                         <span className="w-10 h-10 rounded-xl bg-[#fde8e6] text-[#f97066] flex items-center justify-center text-sm shrink-0">📎</span>
                         <div className="flex-1 min-w-0">
                           {r.url ? (
-                            <a href={r.url} target="_blank" rel="noopener" className="text-sm font-semibold text-gray-900 hover:text-[#f97066] transition-colors">{r.title}</a>
+                            <a href={r.url} target="_blank" rel="noopener" className="text-sm font-semibold text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">{r.title}</a>
                           ) : <span className="text-sm font-semibold text-gray-900">{r.title}</span>}
                           <div className="flex items-center gap-2 mt-1.5">
                             <span className="text-xs bg-[#fde8e6] text-[#e0524a] px-2 py-0.5 rounded-full">{r.domain}</span>
@@ -399,7 +399,7 @@ function InlineComments({ targetId, type }: { targetId: string; type: string }) 
           {comments.length === 0 && <p className="text-xs text-gray-300 pl-6">暂无评论，说点什么吧</p>}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5 pl-6">
-              <span className="w-5 h-5 rounded-full bg-[#fde8e6] text-[#f97066] flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">{c.user.username[0]}</span>
+              <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">{c.user.username[0]}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs"><span className="font-semibold text-gray-800">{c.user.username}</span> <span className="text-gray-600">{c.content}</span></p>
                 <p className="text-[10px] text-gray-300 mt-0.5">{new Date(c.createdAt).toLocaleDateString('zh-CN')}</p>

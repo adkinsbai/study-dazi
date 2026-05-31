@@ -137,7 +137,7 @@ export default function RegisterPage() {
           </button>
 
           <div className="text-center text-sm">
-            <Link href="/login" className="text-[#f97066] hover:text-[#e0524a] transition-colors">
+            <Link href="/login" className="text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">
               已有账号？去登录
             </Link>
           </div>

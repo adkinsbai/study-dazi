@@ -121,27 +121,27 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] flex items-center justify-center text-white text-sm font-bold">D</span>
-            <span className="text-lg font-bold text-gray-900 group-hover:text-[#f97066] transition-colors">Study-DaZi</span>
+            <span className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors">Study-DaZi</span>
           </Link>
           {user ? (
             <nav className="flex items-center gap-1 sm:gap-2" role="navigation" aria-label="主导航">
               <Link href="/paths/new" className="px-3 py-1.5 rounded-full bg-[#f97066] text-white text-sm font-medium hover:bg-[#e0524a] transition-colors">
                 + 生成路径
               </Link>
-              <Link href="/explore" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-[#fde8e6] hover:text-[#e0524a] transition-colors">广场</Link>
-              <Link href="/friends" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-[#fde8e6] hover:text-[#e0524a] transition-colors relative" aria-label={`好友${pendingCount > 0 ? `，${pendingCount}条新请求` : ''}`}>
+              <Link href="/explore" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors">广场</Link>
+              <Link href="/friends" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors relative" aria-label={`好友${pendingCount > 0 ? `，${pendingCount}条新请求` : ''}`}>
                 好友
                 {pendingCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">{pendingCount}</span>}
               </Link>
-              <Link href="/messages" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-[#fde8e6] hover:text-[#e0524a] transition-colors relative" aria-label={`消息${msgCount > 0 ? `，${msgCount}条未读` : ''}`}>
+              <Link href="/messages" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors relative" aria-label={`消息${msgCount > 0 ? `，${msgCount}条未读` : ''}`}>
                 💬{msgCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">{msgCount}</span>}
               </Link>
-              <Link href="/notifications" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-[#fde8e6] hover:text-[#e0524a] transition-colors relative" aria-label={`通知${notifCount > 0 ? `，${notifCount}条未读` : ''}`}>
+              <Link href="/notifications" className="px-3 py-1.5 rounded-full text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-700 transition-colors relative" aria-label={`通知${notifCount > 0 ? `，${notifCount}条未读` : ''}`}>
                 🔔{notifCount > 0 && <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">{notifCount}</span>}
               </Link>
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
               <Link href="/profile" className="flex items-center gap-1.5 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f97066] to-[#f97066]/60 flex items-center justify-center text-white text-[10px] font-bold">{user.username[0]}</span>
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[10px] font-bold">{user.username[0]}</span>
                 <span className="text-sm text-gray-700 hidden sm:inline">{user.username}</span>
               </Link>
               <Link href="/settings" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors" title="设置">⚙️</Link>
@@ -191,7 +191,7 @@ export default function Home() {
                     <span className="w-1 h-5 rounded-full bg-[#f97066]"></span>
                     我的学习路径
                   </h2>
-                  <Link href="/paths/new" className="text-sm text-[#f97066] hover:text-[#e0524a] font-medium transition-colors">
+                  <Link href="/paths/new" className="text-sm text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] font-medium transition-colors">
                     查看全部 →
                   </Link>
                 </div>
@@ -262,7 +262,7 @@ export default function Home() {
                       <span className="w-1 h-4 rounded-full bg-[#8b5cf6]"></span>
                       搭子空间
                     </h3>
-                    <Link href="/buddies" className="text-xs text-[#f97066] hover:text-[#e0524a] transition-colors">全部</Link>
+                    <Link href="/buddies" className="text-xs text-[#6366f1] hover:text-[#4f46e5] transition-colors">全部</Link>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {buddies.map(b => (
@@ -274,7 +274,7 @@ export default function Home() {
                           <p className="text-sm font-medium text-gray-900 truncate">{b.buddy.username}</p>
                           <span className="text-[10px] bg-[#ede9fe] text-[#7c3aed] px-1.5 py-0.5 rounded-full">{b.domain}</span>
                         </div>
-                        <Link href={`/messages?with=${b.buddy.id}`} className="p-1.5 rounded-full text-gray-400 hover:text-[#f97066] hover:bg-[#fde8e6] transition-colors shrink-0" title="私信">💬</Link>
+                        <Link href={`/messages?with=${b.buddy.id}`} className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0" title="私信">💬</Link>
                       </div>
                     ))}
                   </div>
@@ -285,13 +285,13 @@ export default function Home() {
               <div className="bg-gradient-to-br from-[#ede9fe] to-[#f5f3ff] rounded-2xl p-4">
                 <h3 className="text-sm font-semibold text-[#5b21b6] mb-3">快捷操作</h3>
                 <div className="space-y-2">
-                  <Link href="/paths/new" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+                  <Link href="/paths/new" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] hover:bg-white hover:shadow-sm transition-all">
                     <span>✨</span> AI 生成学习路径
                   </Link>
-                  <Link href="/explore" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+                  <Link href="/explore" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] hover:bg-white hover:shadow-sm transition-all">
                     <span>🌍</span> 浏览路径广场
                   </Link>
-                  <Link href="/friends" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-gray-700 hover:bg-white hover:shadow-sm transition-all">
+                  <Link href="/friends" className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/80 text-sm text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] hover:bg-white hover:shadow-sm transition-all">
                     <span>👥</span> 查找学习搭子
                   </Link>
                 </div>

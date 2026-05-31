@@ -80,9 +80,9 @@ function MessagesPageInner() {
           <div className="flex-1 overflow-y-auto">
             {convs.map(c => (
               <button key={c.user.id} onClick={() => openChat(c.user)}
-                className={`w-full p-3 flex items-center gap-3 hover:bg-[#fef7f5] text-left transition-colors ${chatUser?.id === c.user.id ? 'bg-[#fef4f3] border-r-2 border-[#f97066]' : 'border-r-2 border-transparent'}`}>
+                className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 text-left transition-colors ${chatUser?.id === c.user.id ? 'bg-[#fef4f3] border-r-2 border-[#f97066]' : 'border-r-2 border-transparent'}`}>
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f97066] to-[#f97066]/60 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
                     {c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" /> : c.user.username[0]?.toUpperCase()}
                   </div>
                   {c.unread > 0 && (
@@ -117,7 +117,7 @@ function MessagesPageInner() {
               {/* 聊天头部 */}
               <div className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] px-4 py-3 flex items-center gap-3 shrink-0">
                 <button onClick={() => setChatUser(null)} className="md:hidden p-1 rounded-full text-gray-400 hover:bg-gray-100 transition-colors">←</button>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f97066] to-[#f97066]/60 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
                   {chatUser.username[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{chatUser.username}</span>

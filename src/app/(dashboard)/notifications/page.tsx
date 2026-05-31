@@ -115,7 +115,7 @@ export default function NotificationsPage() {
                     {!n.read && (
                       <button onClick={(e) => markOne(e, n.id)} className="px-2 py-0.5 rounded-full text-[10px] text-[#f97066] bg-[#fde8e6] hover:bg-[#f97066] hover:text-white transition-colors">已读</button>
                     )}
-                    {link && <span className="text-xs text-gray-300 group-hover:text-[#f97066] transition-colors">→</span>}
+                    {link && <span className="text-xs text-gray-300 group-hover:text-[#6366f1] transition-colors">→</span>}
                   </div>
                 </div>
               );
