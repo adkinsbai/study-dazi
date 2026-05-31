@@ -27,28 +27,27 @@ body {
 
 /* ─── 背景装饰 ─── */
 
-/* 点阵纹理 */
-.bg-dots {
-  background-image: radial-gradient(circle, rgba(249, 112, 102, 0.08) 1.2px, transparent 1.2px);
-  background-size: 20px 20px;
+/* 流动渐变色带 — Stripe 风格 */
+.bg-stripe {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(249, 112, 102, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(249, 112, 102, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+  background-attachment: fixed;
 }
 
-/* 暖色渐变叠加 */
-.bg-warm-glow {
-  background-image: linear-gradient(180deg, rgba(249, 112, 102, 0.08) 0%, rgba(249, 112, 102, 0.03) 40%, transparent 70%);
-  background-repeat: no-repeat;
-  background-size: 100% 400px;
-}
-
-/* 紫色渐变叠加（搭子页面用） */
-.bg-purple-glow {
-  background-image: linear-gradient(180deg, rgba(139, 92, 246, 0.07) 0%, rgba(139, 92, 246, 0.02) 40%, transparent 70%);
-  background-repeat: no-repeat;
-  background-size: 100% 400px;
+/* 紫色流动渐变 — 搭子页面专用 */
+.bg-stripe-purple {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(139, 92, 246, 0.09) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(249, 112, 102, 0.05) 0%, transparent 50%);
+  background-attachment: fixed;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-dots { background-image: none; }
+  .bg-stripe,
+  .bg-stripe-purple { background: none; }
 }
 
 /* ─── 动画工具类 ─── */

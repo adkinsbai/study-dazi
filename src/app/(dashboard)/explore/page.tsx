@@ -125,7 +125,7 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef7f5] bg-dots bg-warm-glow">
+    <div className="min-h-screen bg-[#fef7f5] bg-stripe">
       {/* 标签栏 */}
       <div className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex">

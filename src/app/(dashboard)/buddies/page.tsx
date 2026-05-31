@@ -379,7 +379,7 @@ export default function BuddiesPage() {
   }
 
   return (
-    <div className="bg-[#fef7f5] bg-dots bg-purple-glow min-h-screen page-enter">
+    <div className="bg-[#fef7f5] bg-stripe-purple min-h-screen page-enter">
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Groups */}
         {groups.map((g, i) => (

@@ -105,7 +105,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef7f5] bg-dots bg-warm-glow relative overflow-hidden page-enter">
+    <div className="min-h-screen bg-[#fef7f5] bg-stripe relative overflow-hidden page-enter">
       {/* 背景装饰 */}
       <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-20 -left-20 w-72 h-72 rounded-full bg-[#f97066]/[0.05] blur-2xl"></div>

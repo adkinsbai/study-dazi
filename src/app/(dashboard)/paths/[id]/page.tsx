@@ -231,7 +231,7 @@ export default function PathDetailPage() {
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="bg-[#fef7f5] bg-dots bg-warm-glow min-h-screen page-enter">
+    <div className="bg-[#fef7f5] bg-stripe min-h-screen page-enter">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>

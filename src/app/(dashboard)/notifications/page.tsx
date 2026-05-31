@@ -78,7 +78,7 @@ export default function NotificationsPage() {
   const unreadCount = notifs.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-[#fef7f5] bg-dots bg-warm-glow">
+    <div className="min-h-screen bg-[#fef7f5] bg-stripe">
       <header className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] sticky top-0 z-30">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
