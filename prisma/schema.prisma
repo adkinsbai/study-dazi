@@ -15,7 +15,8 @@ model User {
   emailVerified             Boolean        @default(false) @map("email_verified")
   avatarUrl                 String?        @map("avatar_url")
   bio                       String?        @map("bio")
-  deepseekApiKey            String?        @map("deepseek_api_key")
+  deepseekApiKey            String?        @map("deepseek_api_key") // deprecated: 迁移到 UserApiKey 表
+  apiKeys                   UserApiKey[]
   verificationCode          String?        @map("verification_code")
   verificationCodeExpiresAt DateTime?      @map("verification_code_expires_at")
   verificationAttempts      Int            @default(0) @map("verification_attempts")
@@ -283,4 +284,17 @@ model PasswordResetToken {
   @@index([email])
   @@index([tokenHash])
   @@map("password_reset_tokens")
+}
+
+model UserApiKey {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  provider  String   // deepseek | mimo | openai
+  apiKey    String   @map("api_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("user_api_keys")
 }

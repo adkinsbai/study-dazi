@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { chatWithDeepSeek } from '@/lib/deepseek';
+import { chatCompletion } from '@/lib/ai';
 import { extractJSON } from '@/lib/extract-json';
 import { FRAMEWORK_PROMPT } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
+import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
 
 const BodySchema = z.object({
   domain: z.string().min(1, '请输入想学的领域'),
   level: z.enum(['零基础', '有基础', '进阶']),
   goal: z.string().optional(),
   hours_per_week: z.number().optional(),
+  provider: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,13 +21,24 @@ export async function POST(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: '请先登录' }, { status: 401 });
 
     const payload = await verifyAccessToken(auth);
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    const apiKey = user?.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: '请先在设置中配置 DeepSeek API Key，或设置服务端 DEEPSEEK_API_KEY 环境变量' }, { status: 400 });
-    }
-
     const body = BodySchema.parse(await req.json());
+
+    const provider = body.provider || DEFAULT_PROVIDER;
+
+    // 从 UserApiKey 表获取 key，回退到旧字段和环境变量
+    const userApiKey = await prisma.userApiKey.findUnique({
+      where: {
+        userId_provider: { userId: payload.sub, provider },
+      },
+    });
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    const apiKey = userApiKey?.apiKey
+      || (provider === 'deepseek' ? user?.deepseekApiKey : null)
+      || (provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : null);
+
+    if (!apiKey) {
+      return NextResponse.json({ error: `请先在设置中配置 API Key` }, { status: 400 });
+    }
 
     const userMsg = [
       `领域：${body.domain}`,
@@ -34,7 +47,7 @@ export async function POST(req: NextRequest) {
       body.hours_per_week && `每周投入：${body.hours_per_week}h`,
     ].filter(Boolean).join('\n');
 
-    const response = await chatWithDeepSeek(apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 1500 });
+    const response = await chatCompletion(provider, apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 1500 });
     let result: object;
     try {
       result = extractJSON(response);

@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { ProgressBar } from '@/components/ui/progress-bar';
+
+const PROVIDERS = [
+  { id: 'deepseek', name: 'DeepSeek' },
+  { id: 'mimo', name: 'MIMO' },
+  { id: 'openai', name: 'GPT' },
+] as const;
 
 type Step = 'intent' | 'framework' | 'nodes' | 'ready';
 
@@ -38,6 +44,26 @@ export default function NewPathPage() {
   const [hoursPerWeek, setHoursPerWeek] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [provider, setProvider] = useState('deepseek');
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (token) {
+      fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.apiKeys) {
+            const ids = d.apiKeys.map((k: { provider: string }) => k.provider);
+            setConfiguredProviders(ids);
+            // 如果当前 provider 没配置，自动切换到第一个已配置的
+            if (ids.length > 0 && !ids.includes(provider)) {
+              setProvider(ids[0]);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token]);
 
   const [publicTemplate, setPublicTemplate] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -143,6 +169,7 @@ export default function NewPathPage() {
           level,
           goal: goal || undefined,
           hours_per_week: hoursPerWeek ? parseInt(hoursPerWeek) : undefined,
+          provider,
         }),
       });
       if (!res.ok) {
@@ -196,6 +223,7 @@ export default function NewPathPage() {
           phases_json: JSON.stringify(phases),
           phase_id: phaseId,
           phase_title: phaseTitle,
+          provider,
         }),
       });
       if (!res.ok) {
@@ -244,6 +272,7 @@ export default function NewPathPage() {
                 phases_json: JSON.stringify(phases),
                 phase_id: phase.id,
                 phase_title: phase.title,
+                provider,
               }),
             });
             if (res.ok) {
@@ -320,6 +349,39 @@ export default function NewPathPage() {
         {step === 'intent' && (
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 className="text-lg font-semibold">你想学什么？</h2>
+
+            {/* 模型选择 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">AI 模型</label>
+              <div className="flex gap-2">
+                {PROVIDERS.map(p => {
+                  const isConfigured = configuredProviders.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setProvider(p.id)}
+                      className={`px-3 py-1.5 rounded-full text-sm transition-colors relative ${
+                        provider === p.id
+                          ? 'bg-[#f97066] text-white'
+                          : isConfigured
+                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-gray-50 text-gray-400'
+                      }`}
+                    >
+                      {p.name}
+                      {isConfigured && provider !== p.id && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#10b981] rounded-full" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {!configuredProviders.includes(provider) && (
+                <p className="text-xs text-amber-500 mt-1">
+                  ⚠️ 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置
+                </p>
+              )}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">领域</label>

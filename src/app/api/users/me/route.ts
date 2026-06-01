@@ -14,10 +14,18 @@ export async function GET(req: NextRequest) {
       select: { id: true, username: true, email: true, avatarUrl: true, bio: true, deepseekApiKey: true },
     });
 
+    // 获取用户已配置的 provider 列表
+    const apiKeys = await prisma.userApiKey.findMany({
+      where: { userId: payload.sub },
+      select: { provider: true, createdAt: true },
+    });
+
     return NextResponse.json({
       id: user?.id, username: user?.username, email: user?.email,
       avatarUrl: user?.avatarUrl, bio: user?.bio,
-      deepseekApiKey: !!user?.deepseekApiKey,
+      // 兼容旧字段：如果 UserApiKey 表有 deepseek 就返回 true，否则检查旧字段
+      deepseekApiKey: apiKeys.some(k => k.provider === 'deepseek') || !!user?.deepseekApiKey,
+      apiKeys: apiKeys.map(k => ({ provider: k.provider, configured: true })),
     });
   } catch {
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
@@ -25,7 +33,12 @@ export async function GET(req: NextRequest) {
 }
 
 const PatchSchema = z.object({
+  // 新格式：多 provider
+  provider: z.string().optional(),
+  apiKey: z.string().optional(),
+  // 旧格式兼容
   deepseekApiKey: z.string().optional(),
+  // 其他字段
   username: z.string().min(2).max(30).optional(),
   avatarUrl: z.string().optional(),
   bio: z.string().max(200).optional(),
@@ -39,8 +52,45 @@ export async function PATCH(req: NextRequest) {
     const payload = await verifyAccessToken(auth);
     const body = PatchSchema.parse(await req.json());
 
+    // 新格式：保存到 UserApiKey 表
+    if (body.provider && body.apiKey !== undefined) {
+      if (body.apiKey === '') {
+        // 删除该 provider 的 key
+        await prisma.userApiKey.deleteMany({
+          where: { userId: payload.sub, provider: body.provider },
+        });
+      } else {
+        // upsert
+        await prisma.userApiKey.upsert({
+          where: {
+            userId_provider: { userId: payload.sub, provider: body.provider },
+          },
+          update: { apiKey: body.apiKey },
+          create: { userId: payload.sub, provider: body.provider, apiKey: body.apiKey },
+        });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    // 旧格式兼容：保存到 User 表
     const data: Record<string, string | null> = {};
-    if (body.deepseekApiKey !== undefined) data.deepseekApiKey = body.deepseekApiKey;
+    if (body.deepseekApiKey !== undefined) {
+      // 同时写入 UserApiKey 表
+      if (body.deepseekApiKey === '') {
+        await prisma.userApiKey.deleteMany({
+          where: { userId: payload.sub, provider: 'deepseek' },
+        });
+      } else {
+        await prisma.userApiKey.upsert({
+          where: {
+            userId_provider: { userId: payload.sub, provider: 'deepseek' },
+          },
+          update: { apiKey: body.deepseekApiKey },
+          create: { userId: payload.sub, provider: 'deepseek', apiKey: body.deepseekApiKey },
+        });
+      }
+      data.deepseekApiKey = body.deepseekApiKey;
+    }
     if (body.username) data.username = body.username;
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null;
     if (body.bio !== undefined) data.bio = body.bio || null;
