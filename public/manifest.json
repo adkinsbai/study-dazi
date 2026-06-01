@@ -1,13 +1,18 @@
 {
-  "name": "Study-DaZi — 学习搭子",
-  "short_name": "Study-DaZi",
+  "name": "学习搭子 — Study-DaZi",
+  "short_name": "学习搭子",
   "description": "AI 驱动的自学成长路径规划 + 学习搭子社交平台",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#4f46e5",
+  "background_color": "#fafaf9",
+  "theme_color": "#f97066",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

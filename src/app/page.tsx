@@ -97,13 +97,14 @@ export default function Home() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="relative inline-flex group/tip">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] flex items-center justify-center text-white shadow-md shadow-[#f97066]/30">
-                <GraduationCap size={18} />
+            <Link href="/" className="flex items-center gap-3 group">
+              <span className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] flex items-center justify-center text-white shadow-lg shadow-[#f97066]/25 group-hover:shadow-[#f97066]/40 group-hover:scale-105 transition-all">
+                <GraduationCap size={18} strokeWidth={2.5} />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#10b981] rounded-full border-2 border-white" />
               </span>
-              <span className="flex items-baseline gap-0.5">
-                <span className="text-xl font-black text-[#f97066]" style={{ fontFamily: "'Noto Serif SC', 'STSong', serif", textShadow: '0 2px 8px rgba(249,112,102,0.25)' }}>搭子</span>
-                <span className="text-xs text-gray-400 font-medium ml-0.5 group-hover:text-[#f97066] transition-colors">首页</span>
+              <span className="flex flex-col leading-none">
+                <span className="text-2xl font-black tracking-wide text-[#f97066] group-hover:text-[#e0524a] transition-colors" style={{ fontFamily: "'Noto Serif SC', 'STSong', 'SimSun', serif", textShadow: '0 2px 12px rgba(249,112,102,0.2), 0 1px 3px rgba(249,112,102,0.15)' }}>搭子</span>
+                <span className="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5 group-hover:text-[#f97066] transition-colors">STUDY · 首页</span>
               </span>
             </Link>
           </div>

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Study-DaZi — 学习搭子',
+  title: '学习搭子 — Study DaZi',
   description: 'AI 驱动的自学成长路径规划 + 学习搭子社交平台',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#4f46e5',
+  themeColor: '#f97066',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -41,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet" />
       </head>
