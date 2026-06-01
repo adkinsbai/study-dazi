@@ -95,9 +95,10 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        setTestResult({ ok: true, msg: `连接成功: "${data.reply}"` });
+        setTestResult({ ok: true, msg: `连接成功: "${data.reply}" (${data.url})` });
       } else {
-        setTestResult({ ok: false, msg: data.error || '连接失败' });
+        const detail = data.url ? `${data.error} [${data.url}]` : data.error;
+        setTestResult({ ok: false, msg: detail || '连接失败' });
       }
     } catch {
       setTestResult({ ok: false, msg: '网络错误' });

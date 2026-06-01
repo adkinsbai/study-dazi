@@ -50,8 +50,15 @@ async function chatOpenAI(
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error: ${res.status}`);
+    const text = await res.text().catch(() => '');
+    let msg = `API error: ${res.status}`;
+    try {
+      const err = JSON.parse(text);
+      msg = err.error?.message || err.message || msg;
+    } catch {
+      if (text) msg = `${msg} — ${text.slice(0, 200)}`;
+    }
+    throw new Error(msg);
   }
 
   const data = await res.json();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAccessToken } from '@/lib/auth';
-import { chatCompletion } from '@/lib/ai';
+import { getProviderConfig } from '@/lib/ai-providers';
 import prisma from '@/lib/prisma';
 
 const BodySchema = z.object({
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const payload = await verifyAccessToken(auth);
     const body = BodySchema.parse(await req.json());
 
-    // 如果请求没带 key，从数据库读取已保存的
+    // 获取 key：优先用请求里的，没有就从数据库查
     let apiKey = body.apiKey;
     let baseUrl = body.baseUrl;
     if (!apiKey) {
@@ -32,20 +32,46 @@ export async function POST(req: NextRequest) {
       if (!baseUrl && saved.baseUrl) baseUrl = saved.baseUrl;
     }
 
-    const reply = await chatCompletion(
-      body.provider,
-      apiKey,
-      'Reply with exactly one word: ok',
-      'ping',
-      { temperature: 0, maxTokens: 10, baseUrl }
-    );
+    const config = getProviderConfig(body.provider, baseUrl);
+    const url = `${config.baseUrl}/chat/completions`;
 
-    return NextResponse.json({ ok: true, reply: reply.trim() });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          { role: 'system', content: 'Reply with exactly one word: ok' },
+          { role: 'user', content: 'ping' },
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let msg = `HTTP ${res.status}`;
+      try {
+        const err = JSON.parse(text);
+        msg = err.error?.message || err.message || msg;
+      } catch {
+        if (text) msg = `${msg}: ${text.slice(0, 300)}`;
+      }
+      return NextResponse.json({ ok: false, error: msg, url, model: config.model });
+    }
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'ok';
+    return NextResponse.json({ ok: true, reply, url, model: config.model });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: '参数错误' }, { status: 422 });
     }
     const msg = err instanceof Error ? err.message : '连接失败';
-    return NextResponse.json({ ok: false, error: msg }, { status: 200 });
+    return NextResponse.json({ ok: false, error: msg });
   }
 }
