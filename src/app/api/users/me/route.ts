@@ -62,18 +62,20 @@ export async function PATCH(req: NextRequest) {
         });
       } else {
         // upsert
-        const updateData: Record<string, string | null> = { apiKey: body.apiKey };
-        const createData: Record<string, string> = { userId: payload.sub, provider: body.provider, apiKey: body.apiKey };
-        if (body.baseUrl !== undefined) {
-          updateData.baseUrl = body.baseUrl || null;
-          if (body.baseUrl) createData.baseUrl = body.baseUrl;
-        }
         await prisma.userApiKey.upsert({
           where: {
             userId_provider: { userId: payload.sub, provider: body.provider },
           },
-          update: updateData,
-          create: createData,
+          update: {
+            apiKey: body.apiKey,
+            ...(body.baseUrl !== undefined ? { baseUrl: body.baseUrl || null } : {}),
+          },
+          create: {
+            userId: payload.sub,
+            provider: body.provider,
+            apiKey: body.apiKey,
+            ...(body.baseUrl ? { baseUrl: body.baseUrl } : {}),
+          },
         });
       }
       return NextResponse.json({ success: true });
