@@ -40,7 +40,8 @@
 
 ### 待执行的 SQL 迁移
 
-- [ ] `scripts/migrate-api-keys.sql` — 创建 user_api_keys 表（多模型支持）
+- [x] `scripts/migrate-api-keys.sql` — 创建 user_api_keys 表（多模型支持）— 已执行
+- [ ] `scripts/migrate-api-keys.sql` 中的 ALTER TABLE — 给 user_api_keys 加 base_url 列（中转站支持）
 
 ---
 
@@ -51,7 +52,7 @@
 | **技术栈** | Next.js 16 + React 19 + Tailwind 4 + Prisma 5 + Zustand 5 |
 | **源文件数** | 74 个 (.tsx/.ts) |
 | **API 路由** | 38 个 |
-| **最新 commit** | `dd6050c` feat: multi-model support — DeepSeek, MIMO, GPT (2026-05-31) |
+| **最新 commit** | `164057a` feat: add GPT relay station support (2026-06-01) |
 
 ---
 
@@ -120,11 +121,12 @@
 
 ---
 
-## 近期改动 (2026-05-31)
+## 近期改动
 
 按时间倒序，只列最终状态：
 
-1. **feat: multi-model support** — 支持 DeepSeek/MIMO/GPT 三种模型，用户可在设置页配置各 provider 的 API Key，路径生成页可选择模型
+1. **feat: GPT relay station** — 新增"GPT 中转站"provider，支持自定义接口地址 + key
+2. **feat: multi-model support** — 支持 DeepSeek/MIMO/GPT 三种模型，用户可在设置页配置各 provider 的 API Key，路径生成页可选择模型
 
 1. **fix: show password requirements on register page** — 注册页显示密码格式要求
 2. **fix: buddy groups, progress calc, notification badges** — 搭子群组、进度计算、通知徽章修复
