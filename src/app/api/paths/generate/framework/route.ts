@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const apiKey = userApiKey?.apiKey
       || (provider === 'deepseek' ? user?.deepseekApiKey : null)
       || (provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : null);
+    const baseUrl = userApiKey?.baseUrl || undefined;
 
     if (!apiKey) {
       return NextResponse.json({ error: `请先在设置中配置 API Key` }, { status: 400 });
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       body.hours_per_week && `每周投入：${body.hours_per_week}h`,
     ].filter(Boolean).join('\n');
 
-    const response = await chatCompletion(provider, apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 1500 });
+    const response = await chatCompletion(provider, apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 1500, baseUrl });
     let result: object;
     try {
       result = extractJSON(response);

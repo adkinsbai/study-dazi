@@ -10,9 +10,13 @@ export async function chatCompletion(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  options?: { temperature?: number; maxTokens?: number }
+  options?: { temperature?: number; maxTokens?: number; baseUrl?: string }
 ): Promise<string> {
-  const config = getProviderConfig(provider);
+  const config = getProviderConfig(provider, options?.baseUrl);
+
+  if (!config.baseUrl) {
+    throw new Error(`请先在设置中配置 ${config.name} 的接口地址`);
+  }
 
   const res = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',

@@ -36,6 +36,7 @@ const PatchSchema = z.object({
   // 新格式：多 provider
   provider: z.string().optional(),
   apiKey: z.string().optional(),
+  baseUrl: z.string().optional(),
   // 旧格式兼容
   deepseekApiKey: z.string().optional(),
   // 其他字段
@@ -61,12 +62,18 @@ export async function PATCH(req: NextRequest) {
         });
       } else {
         // upsert
+        const updateData: Record<string, string | null> = { apiKey: body.apiKey };
+        const createData: Record<string, string> = { userId: payload.sub, provider: body.provider, apiKey: body.apiKey };
+        if (body.baseUrl !== undefined) {
+          updateData.baseUrl = body.baseUrl || null;
+          if (body.baseUrl) createData.baseUrl = body.baseUrl;
+        }
         await prisma.userApiKey.upsert({
           where: {
             userId_provider: { userId: payload.sub, provider: body.provider },
           },
-          update: { apiKey: body.apiKey },
-          create: { userId: payload.sub, provider: body.provider, apiKey: body.apiKey },
+          update: updateData,
+          create: createData,
         });
       }
       return NextResponse.json({ success: true });

@@ -9,6 +9,7 @@ export interface AIProviderConfig {
   model: string;
   getKeyUrl: string;
   placeholder: string;
+  customizableUrl?: boolean; // 支持自定义接口地址（中转站）
 }
 
 export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
@@ -33,14 +34,26 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
     getKeyUrl: 'https://platform.openai.com/api-keys',
     placeholder: 'sk-...',
   },
+  'openai-relay': {
+    name: 'GPT 中转站',
+    baseUrl: '', // 用户自定义
+    model: 'gpt-4o-mini',
+    getKeyUrl: '',
+    placeholder: 'sk-...',
+    customizableUrl: true,
+  },
 };
 
 export const DEFAULT_PROVIDER = 'deepseek';
 
-export function getProviderConfig(provider: string): AIProviderConfig {
+export function getProviderConfig(provider: string, customBaseUrl?: string): AIProviderConfig {
   const config = AI_PROVIDERS[provider];
   if (!config) {
     throw new Error(`不支持的 AI 模型: ${provider}。可选: ${Object.keys(AI_PROVIDERS).join(', ')}`);
+  }
+  // 中转站使用用户自定义 URL
+  if (customBaseUrl) {
+    return { ...config, baseUrl: customBaseUrl };
   }
   return config;
 }

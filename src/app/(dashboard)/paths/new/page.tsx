@@ -9,6 +9,7 @@ const PROVIDERS = [
   { id: 'deepseek', name: 'DeepSeek' },
   { id: 'mimo', name: 'MIMO' },
   { id: 'openai', name: 'GPT' },
+  { id: 'openai-relay', name: 'GPT 中转站' },
 ] as const;
 
 type Step = 'intent' | 'framework' | 'nodes' | 'ready';

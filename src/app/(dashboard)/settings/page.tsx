@@ -8,6 +8,7 @@ const PROVIDERS = [
   { id: 'deepseek', name: 'DeepSeek', url: 'https://platform.deepseek.com', placeholder: 'sk-...' },
   { id: 'mimo', name: '小米 MIMO', url: 'https://mimo.xiaomi.com', placeholder: '...' },
   { id: 'openai', name: 'OpenAI GPT', url: 'https://platform.openai.com/api-keys', placeholder: 'sk-...' },
+  { id: 'openai-relay', name: 'GPT 中转站', url: '', placeholder: 'sk-...', customizableUrl: true },
 ] as const;
 
 export default function SettingsPage() {
@@ -15,6 +16,7 @@ export default function SettingsPage() {
   const token = useAuthStore((s) => s.token);
   const [selectedProvider, setSelectedProvider] = useState('deepseek');
   const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +52,11 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ provider: selectedProvider, apiKey }),
+        body: JSON.stringify({
+          provider: selectedProvider,
+          apiKey,
+          ...(currentProvider.customizableUrl ? { baseUrl } : {}),
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -133,7 +139,7 @@ export default function SettingsPage() {
                 {PROVIDERS.map(p => (
                   <button
                     key={p.id}
-                    onClick={() => { setSelectedProvider(p.id); setApiKey(''); setError(''); }}
+                    onClick={() => { setSelectedProvider(p.id); setApiKey(''); setBaseUrl(''); setError(''); }}
                     className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       selectedProvider === p.id
                         ? 'bg-[#f97066] text-white'
@@ -150,9 +156,11 @@ export default function SettingsPage() {
               <label htmlFor="apikey" className="block text-sm font-medium text-gray-700 mb-1">
                 {currentProvider.name} API Key
               </label>
-              <p className="text-xs text-gray-400 mb-2">
-                在 <a href={currentProvider.url} target="_blank" rel="noopener noreferrer" className="text-[#f97066] underline underline-offset-2">{currentProvider.url}</a> 获取
-              </p>
+              {currentProvider.url && (
+                <p className="text-xs text-gray-400 mb-2">
+                  在 <a href={currentProvider.url} target="_blank" rel="noopener noreferrer" className="text-[#f97066] underline underline-offset-2">{currentProvider.url}</a> 获取
+                </p>
+              )}
               <input
                 id="apikey"
                 type="password"
@@ -162,6 +170,25 @@ export default function SettingsPage() {
                 className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm shadow-sm focus:border-[#f97066] focus:ring-1 focus:ring-[#f97066] outline-none font-mono transition-colors"
               />
             </div>
+
+            {currentProvider.customizableUrl && (
+              <div>
+                <label htmlFor="baseurl" className="block text-sm font-medium text-gray-700 mb-1">
+                  接口地址
+                </label>
+                <p className="text-xs text-gray-400 mb-2">
+                  中转站提供的 API 地址，如 https://api.example.com/v1
+                </p>
+                <input
+                  id="baseurl"
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder="https://api.example.com/v1"
+                  className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm shadow-sm focus:border-[#f97066] focus:ring-1 focus:ring-[#f97066] outline-none transition-colors"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="text-sm text-[#ef4444] bg-red-50 px-3 py-2 rounded-xl">{error}</div>
