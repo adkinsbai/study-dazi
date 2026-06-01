@@ -24,7 +24,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   mimo: {
     name: '小米 MIMO',
-    baseUrl: 'https://api.xiaomimimo.com/v1',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
     model: 'MiMo-V2.5-Pro',
     getKeyUrl: 'https://mimo.xiaomi.com',
     placeholder: 'tp-...',
