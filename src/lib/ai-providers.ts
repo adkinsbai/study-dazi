@@ -24,12 +24,11 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   mimo: {
     name: '小米 MIMO',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
     model: 'MiMo-V2.5-Pro',
     getKeyUrl: 'https://mimo.xiaomi.com',
     placeholder: 'tp-...',
     customizableUrl: true,
-    format: 'anthropic',
   },
   openai: {
     name: 'OpenAI GPT',
@@ -41,7 +40,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   'openai-relay': {
     name: 'GPT 中转站',
     baseUrl: '',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5.5',
     getKeyUrl: '',
     placeholder: 'sk-...',
     customizableUrl: true,
