@@ -24,7 +24,7 @@
 | `DATABASE_URL` | Supabase 连接串 |
 | `JWT_SECRET` | Access Token 签名密钥 |
 | `JWT_REFRESH_SECRET` | Refresh Token 签名密钥 |
-| `DEEPSEEK_API_KEY` | AI 路径生成 |
+| `DEEPSEEK_API_KEY` | DeepSeek 路径生成（用户未配置时的默认值） |
 | `RESEND_API_KEY` | 邮件发送（验证码） |
 | `EMAIL_FROM` | 发件人地址 |
 | `VAPID_PUBLIC_KEY` | Web Push VAPID 公钥 |
@@ -38,6 +38,10 @@
 3. 所有新表必须执行 `ALTER TABLE xxx DISABLE ROW LEVEL SECURITY;`
 4. Prisma Client 在 Vercel 构建时通过 `postinstall` 钩子自动生成
 
+### 待执行的 SQL 迁移
+
+- [ ] `scripts/migrate-api-keys.sql` — 创建 user_api_keys 表（多模型支持）
+
 ---
 
 ## 项目概况
@@ -47,7 +51,7 @@
 | **技术栈** | Next.js 16 + React 19 + Tailwind 4 + Prisma 5 + Zustand 5 |
 | **源文件数** | 74 个 (.tsx/.ts) |
 | **API 路由** | 38 个 |
-| **最新 commit** | `dc0f68d` fix: show password requirements on register page (2026-05-31) |
+| **最新 commit** | `dd6050c` feat: multi-model support — DeepSeek, MIMO, GPT (2026-05-31) |
 
 ---
 
@@ -62,9 +66,17 @@
 - [x] Zustand 前端状态管理
 - [x] 页面加载时自动恢复登录态 (AuthProvider)
 
+### 🤖 多模型支持
+- [x] 统一 AI 调用接口 (src/lib/ai.ts)，兼容 OpenAI 格式
+- [x] Provider 注册表：DeepSeek、小米 MIMO、OpenAI GPT
+- [x] 用户可为每个 provider 独立配置 API Key (UserApiKey 表)
+- [x] 设置页：provider 选择器 + key 管理
+- [x] 路径生成页：model 选择器，自动传递 provider 到 API
+- [x] 向后兼容：旧 deepseekApiKey 字段仍可用
+
 ### 📚 学习路径
-- [x] AI 生成学习路径框架 (DeepSeek API)
-- [x] AI 展开子节点
+- [x] AI 生成学习路径框架 (支持多模型)
+- [x] AI 展开子节点 (支持多模型)
 - [x] 技能树递归渲染 (tree-renderer.tsx)
 - [x] 节点详情侧边抽屉 (node-drawer.tsx)
 - [x] 节点进度更新 / 自动父节点状态
@@ -111,6 +123,8 @@
 ## 近期改动 (2026-05-31)
 
 按时间倒序，只列最终状态：
+
+1. **feat: multi-model support** — 支持 DeepSeek/MIMO/GPT 三种模型，用户可在设置页配置各 provider 的 API Key，路径生成页可选择模型
 
 1. **fix: show password requirements on register page** — 注册页显示密码格式要求
 2. **fix: buddy groups, progress calc, notification badges** — 搭子群组、进度计算、通知徽章修复
