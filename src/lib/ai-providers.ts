@@ -1,7 +1,8 @@
 /**
  * AI Provider 注册表
- * 所有 provider 都兼容 OpenAI /v1/chat/completions 格式
  */
+
+export type APIFormat = 'openai' | 'anthropic';
 
 export interface AIProviderConfig {
   name: string;
@@ -9,7 +10,8 @@ export interface AIProviderConfig {
   model: string;
   getKeyUrl: string;
   placeholder: string;
-  customizableUrl?: boolean; // 支持自定义接口地址（中转站）
+  customizableUrl?: boolean;
+  format?: APIFormat; // 默认 'openai'
 }
 
 export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
@@ -22,11 +24,12 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   mimo: {
     name: '小米 MIMO',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
-    model: 'mimo-v2.5-pro',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com',
+    model: 'MiMo-V2.5-Pro',
     getKeyUrl: 'https://mimo.xiaomi.com',
-    placeholder: '...',
+    placeholder: 'tp-...',
     customizableUrl: true,
+    format: 'anthropic',
   },
   openai: {
     name: 'OpenAI GPT',
@@ -37,7 +40,7 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   'openai-relay': {
     name: 'GPT 中转站',
-    baseUrl: '', // 用户自定义
+    baseUrl: '',
     model: 'gpt-4o-mini',
     getKeyUrl: '',
     placeholder: 'sk-...',
@@ -52,7 +55,6 @@ export function getProviderConfig(provider: string, customBaseUrl?: string): AIP
   if (!config) {
     throw new Error(`不支持的 AI 模型: ${provider}。可选: ${Object.keys(AI_PROVIDERS).join(', ')}`);
   }
-  // 中转站使用用户自定义 URL
   if (customBaseUrl) {
     return { ...config, baseUrl: customBaseUrl };
   }

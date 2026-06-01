@@ -80,17 +80,18 @@ export default function SettingsPage() {
     setTestResult(null);
     setError('');
     try {
+      // 构建请求体：如果有输入就用输入的，没有就让后端查已保存的
+      const body: Record<string, string> = { provider: selectedProvider };
+      if (apiKey.trim()) body.apiKey = apiKey;
+      if (currentProvider.customizableUrl && baseUrl.trim()) body.baseUrl = baseUrl;
+
       const res = await fetch('/api/ai/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          provider: selectedProvider,
-          apiKey,
-          ...(currentProvider.customizableUrl ? { baseUrl } : {}),
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (data.ok) {
@@ -253,7 +254,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={handleTest}
-                disabled={!apiKey.trim() || testing || (currentProvider.customizableUrl && !baseUrl.trim())}
+                disabled={testing || (!apiKey.trim() && !configuredProviders.includes(selectedProvider))}
                 className="rounded-full border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
                 {testing ? '测试中...' : '测试连接'}
