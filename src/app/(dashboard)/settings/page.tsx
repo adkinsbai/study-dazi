@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -70,6 +72,36 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存失败');
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    setError('');
+    try {
+      const res = await fetch('/api/ai/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          provider: selectedProvider,
+          apiKey,
+          ...(currentProvider.customizableUrl ? { baseUrl } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setTestResult({ ok: true, msg: `连接成功: "${data.reply}"` });
+      } else {
+        setTestResult({ ok: false, msg: data.error || '连接失败' });
+      }
+    } catch {
+      setTestResult({ ok: false, msg: '网络错误' });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -205,14 +237,28 @@ export default function SettingsPage() {
             {saved && (
               <div className="text-sm text-[#10b981] bg-green-50 px-3 py-2 rounded-xl">已保存</div>
             )}
+            {testResult && (
+              <div className={`text-sm px-3 py-2 rounded-xl ${testResult.ok ? 'text-[#10b981] bg-green-50' : 'text-[#ef4444] bg-red-50'}`}>
+                {testResult.ok ? '✅ ' : '❌ '}{testResult.msg}
+              </div>
+            )}
 
-            <button
-              onClick={handleSave}
-              disabled={!apiKey.trim()}
-              className="rounded-full bg-[#f97066] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50 transition-colors"
-            >
-              保存
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={!apiKey.trim()}
+                className="rounded-full bg-[#f97066] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50 transition-colors"
+              >
+                保存
+              </button>
+              <button
+                onClick={handleTest}
+                disabled={!apiKey.trim() || testing || (currentProvider.customizableUrl && !baseUrl.trim())}
+                className="rounded-full border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {testing ? '测试中...' : '测试连接'}
+              </button>
+            </div>
           </div>
         </div>
       </main>
