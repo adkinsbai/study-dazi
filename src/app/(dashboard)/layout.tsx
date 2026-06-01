@@ -27,13 +27,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="relative inline-flex group/tip">
-            <Link href="/" className="flex items-center gap-2 group/logo">
+            <Link href="/" className="flex items-center gap-2.5 group/logo">
               <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] flex items-center justify-center text-white shadow-md shadow-[#f97066]/30">
                 <GraduationCap size={18} />
               </span>
-              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-[#f97066] to-[#e0524a] bg-clip-text text-transparent drop-shadow-[0_2px_4px_rgba(249,112,102,0.3)]" style={{ fontFamily: "'Noto Serif SC', serif" }}>DaZi</span>
+              <span className="flex items-baseline gap-0.5">
+                <span className="text-xl font-black text-[#f97066]" style={{ fontFamily: "'Noto Serif SC', 'STSong', serif", textShadow: '0 2px 8px rgba(249,112,102,0.25)' }}>搭子</span>
+                <span className="text-xs text-gray-400 font-medium ml-0.5 group-hover/logo:text-[#f97066] transition-colors">首页</span>
+              </span>
             </Link>
-            <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-white text-[11px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity shadow-lg z-50">返回首页</span>
           </div>
           <nav className="flex items-center gap-1 text-sm" role="navigation" aria-label="主导航">
             <div className="relative inline-flex group/tip">
