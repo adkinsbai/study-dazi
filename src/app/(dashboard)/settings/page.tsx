@@ -180,7 +180,7 @@ export default function SettingsPage() {
                 {PROVIDERS.map(p => (
                   <button
                     key={p.id}
-                    onClick={() => { setSelectedProvider(p.id); setApiKey(''); setBaseUrl(''); setError(''); }}
+                    onClick={() => { setSelectedProvider(p.id); setApiKey(''); setBaseUrl(''); setError(''); setTestResult(null); }}
                     className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       selectedProvider === p.id
                         ? 'bg-[#f97066] text-white'
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                 id="apikey"
                 type="password"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => { setApiKey(e.target.value); setTestResult(null); }}
                 placeholder={currentProvider.placeholder}
                 className="block w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm shadow-sm focus:border-[#f97066] focus:ring-1 focus:ring-[#f97066] outline-none font-mono transition-colors"
               />
