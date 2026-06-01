@@ -64,7 +64,8 @@ export default function Home() {
       const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
-        if (!data.deepseekApiKey) setShowKeyModal(true);
+        const hasAnyKey = (data.apiKeys && data.apiKeys.length > 0) || data.deepseekApiKey;
+        if (!hasAnyKey) setShowKeyModal(true);
       }
     } catch { /* ignore */ }
   };
@@ -370,8 +371,8 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-gray-900">配置 API Key</h3>
             </div>
             <p className="text-sm text-gray-600 text-center">
-              使用 AI 生成学习路径需要 DeepSeek API Key。<br />
-              在 <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="text-[#6366f1] underline underline-offset-2 hover:text-[#4f46e5]">platform.deepseek.com</a> 免费注册获取。
+              使用 AI 生成学习路径需要配置一个 AI 模型的 API Key。<br />
+              支持 DeepSeek、小米 MIMO、OpenAI GPT 等。
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowKeyModal(false)} className="flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">稍后</button>

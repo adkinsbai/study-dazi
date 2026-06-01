@@ -14,6 +14,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  authReady: boolean;
   setAuth: (user: User, token: string) => void;
   clearAuth: () => void;
   login: (email: string, password: string) => Promise<void>;
@@ -27,10 +28,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isLoading: false,
+  authReady: false,
 
-  setAuth: (user, token) => set({ user, token }),
+  setAuth: (user, token) => set({ user, token, authReady: true }),
 
-  clearAuth: () => set({ user: null, token: null }),
+  clearAuth: () => set({ user: null, token: null, authReady: true }),
 
   login: async (email, password) => {
     const res = await fetch('/api/auth/login', {

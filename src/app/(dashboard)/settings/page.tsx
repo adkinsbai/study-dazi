@@ -14,6 +14,7 @@ const PROVIDERS: { id: string; name: string; url: string; placeholder: string; c
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
+  const authReady = useAuthStore((s) => s.authReady);
   const [selectedProvider, setSelectedProvider] = useState('deepseek');
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
@@ -23,12 +24,13 @@ export default function SettingsPage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!authReady) return; // 等认证状态恢复
     if (!user) {
       router.push('/login');
       return;
     }
     loadApiKeys();
-  }, [user]);
+  }, [user, authReady]);
 
   const loadApiKeys = async () => {
     try {
@@ -85,6 +87,13 @@ export default function SettingsPage() {
     } catch { /* ignore */ }
   };
 
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
+        <p className="text-gray-400 text-sm">加载中...</p>
+      </div>
+    );
+  }
   if (!user) return null;
 
   const currentProvider = PROVIDERS.find(p => p.id === selectedProvider)!;
