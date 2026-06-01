@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 
-const PROVIDERS = [
+const PROVIDERS: { id: string; name: string; url: string; placeholder: string; customizableUrl?: boolean }[] = [
   { id: 'deepseek', name: 'DeepSeek', url: 'https://platform.deepseek.com', placeholder: 'sk-...' },
   { id: 'mimo', name: '小米 MIMO', url: 'https://mimo.xiaomi.com', placeholder: '...' },
   { id: 'openai', name: 'OpenAI GPT', url: 'https://platform.openai.com/api-keys', placeholder: 'sk-...' },
   { id: 'openai-relay', name: 'GPT 中转站', url: '', placeholder: 'sk-...', customizableUrl: true },
-] as const;
+];
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
