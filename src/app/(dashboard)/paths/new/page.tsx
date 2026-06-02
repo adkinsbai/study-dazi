@@ -83,6 +83,8 @@ export default function NewPathPage() {
   const [expandingPhases, setExpandingPhases] = useState<Set<string>>(new Set());
   const [nodeProgressMap, setNodeProgressMap] = useState<Record<string, { progress: number; status: string }>>({});
   const nodeProgressTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+  // 用户选择的子节点：{ phaseId: Set<nodeId> }
+  const [selectedNodes, setSelectedNodes] = useState<Record<string, Set<string>>>({});
 
   // 进度条状态
   const [progress, setProgress] = useState(0);
@@ -288,9 +290,15 @@ export default function NewPathPage() {
         throw new Error(data.error || '展开失败');
       }
       const data = await res.json();
+      const nodes = data.nodes || [];
       // 写入缓存 + 设为可见
-      setExpandedPhases((prev) => ({ ...prev, [phaseId]: data.nodes || [] }));
+      setExpandedPhases((prev) => ({ ...prev, [phaseId]: nodes }));
       setVisibleExpanded((prev) => new Set(prev).add(phaseId));
+      // 默认全选所有子节点
+      setSelectedNodes((prev) => ({
+        ...prev,
+        [phaseId]: new Set(nodes.map((n: TreeNode) => n.id)),
+      }));
       finishNodeProgress(phaseId);
     } catch (err) {
       setError(err instanceof Error ? err.message : '展开失败');
@@ -302,6 +310,20 @@ export default function NewPathPage() {
         return next;
       });
     }
+  };
+
+  // 切换子节点选中状态
+  const toggleNodeSelection = (phaseId: string, nodeId: string) => {
+    setSelectedNodes((prev) => {
+      const phaseSelected = prev[phaseId] || new Set();
+      const next = new Set(phaseSelected);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return { ...prev, [phaseId]: next };
+    });
   };
 
   const handleSave = async () => {
@@ -347,14 +369,20 @@ export default function NewPathPage() {
         }
       }
 
-      // 3. 构建完整树
+      // 3. 构建完整树（只包含用户选中的子节点）
       const tree = {
         domain,
         level,
-        phases: phases.map((p) => ({
-          ...p,
-          children: allChildren[p.id] || [],
-        })),
+        phases: phases.map((p) => {
+          const allNodes = allChildren[p.id] || [];
+          const selected = selectedNodes[p.id];
+          // 如果用户没有手动选择，则保留所有节点
+          const children = selected ? allNodes.filter(n => selected.has(n.id)) : allNodes;
+          return {
+            ...p,
+            children,
+          };
+        }),
       };
 
       setProgress(100);
@@ -628,23 +656,32 @@ export default function NewPathPage() {
                   {/* Expanded children */}
                   {visibleExpanded.has(phase.id) && expandedPhases[phase.id] && (
                     <div className="mt-3 ml-4 border-l-2 border-[#fde8e6] pl-4 space-y-2">
-                      {expandedPhases[phase.id].map((node) => (
-                        <div key={node.id} className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              node.node_type === 'required' ? 'bg-[#fef4f3] text-[#f97066]' :
-                              node.node_type === 'optional' ? 'bg-amber-50 text-amber-600' :
-                              'bg-purple-50 text-purple-600'
-                            }`}>
-                              {node.node_type === 'required' ? '必修' : node.node_type === 'optional' ? '可选' : '进阶'}
-                            </span>
-                            <span className="font-medium">{node.title}</span>
-                            <span className="text-gray-400">~{node.estimated_hours}h</span>
+                      {expandedPhases[phase.id].map((node) => {
+                        const isSelected = selectedNodes[phase.id]?.has(node.id) ?? true;
+                        return (
+                          <div key={node.id} className={`text-sm p-2 rounded-lg transition-colors ${isSelected ? 'bg-white' : 'bg-gray-50 opacity-60'}`}>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleNodeSelection(phase.id, node.id)}
+                                className="rounded border-gray-300 text-[#f97066] focus:ring-[#f97066]"
+                              />
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                node.node_type === 'required' ? 'bg-[#fef4f3] text-[#f97066]' :
+                                node.node_type === 'optional' ? 'bg-amber-50 text-amber-600' :
+                                'bg-purple-50 text-purple-600'
+                              }`}>
+                                {node.node_type === 'required' ? '必修' : node.node_type === 'optional' ? '可选' : '进阶'}
+                              </span>
+                              <span className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-400 line-through'}`}>{node.title}</span>
+                              <span className="text-gray-400">~{node.estimated_hours}h</span>
+                            </div>
+                            <p className={`mt-0.5 ${isSelected ? 'text-gray-500' : 'text-gray-400'}`}>{node.description}</p>
+                            <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-400' : 'text-gray-300'}`}>✅ {node.check_criteria}</p>
                           </div>
-                          <p className="text-gray-500 mt-0.5">{node.description}</p>
-                          <p className="text-gray-400 text-xs mt-0.5">✅ {node.check_criteria}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
