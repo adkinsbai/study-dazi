@@ -91,6 +91,9 @@ export async function POST(req: NextRequest) {
 - 感兴趣方向：${userInfo.interests.join('、')}`;
 
     // 调用 AI 生成用户画像
+    console.log('[Profile] 开始生成用户画像...', { provider, domain: body.domain });
+    console.log('[Profile] userMsg 长度:', userMsg.length);
+
     const profile = await chatCompletion(
       provider,
       saved.apiKey,
@@ -99,8 +102,10 @@ export async function POST(req: NextRequest) {
       { baseUrl: saved.baseUrl || undefined }
     );
 
+    console.log('[Profile] 生成成功，长度:', profile.length);
     return NextResponse.json({ ok: true, profile });
   } catch (err) {
+    console.error('[Profile] 生成失败:', err);
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: '参数错误', details: err.issues }, { status: 422 });
     }
