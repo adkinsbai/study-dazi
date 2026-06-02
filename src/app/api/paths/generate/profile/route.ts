@@ -72,8 +72,13 @@ export async function POST(req: NextRequest) {
       interests: body.interests?.length ? body.interests : ['未指定'],
     };
 
+    // 获取当前时间
+    const now = new Date();
+    const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     // 构建 user message
     const userMsg = `学习领域：${body.domain}
+当前日期：${currentDate}
 
 用户信息：
 - 当前身份：${userInfo.occupation}
