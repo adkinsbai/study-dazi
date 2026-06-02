@@ -79,12 +79,10 @@ export default function NewPathPage() {
   const [expandedPhases, setExpandedPhases] = useState<Record<string, TreeNode[]>>({});
   // visibleExpanded = 当前展开可见的阶段 id 集合
   const [visibleExpanded, setVisibleExpanded] = useState<Set<string>>(new Set());
-  const [expandingPhase, setExpandingPhase] = useState<string | null>(null);
-
-  // 节点展开进度条
-  const [nodeProgress, setNodeProgress] = useState(0);
-  const [nodeProgressStatus, setNodeProgressStatus] = useState('');
-  const nodeProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 支持多个并行展开的进度状态
+  const [expandingPhases, setExpandingPhases] = useState<Set<string>>(new Set());
+  const [nodeProgressMap, setNodeProgressMap] = useState<Record<string, { progress: number; status: string }>>({});
+  const nodeProgressTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   // 进度条状态
   const [progress, setProgress] = useState(0);
@@ -123,9 +121,8 @@ export default function NewPathPage() {
     setProgressStatus('完成！');
   }, []);
 
-  const startNodeProgress = useCallback(() => {
-    setNodeProgress(0);
-    setNodeProgressStatus('正在生成子节点...');
+  const startNodeProgress = useCallback((phaseId: string) => {
+    setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 0, status: '正在生成子节点...' } }));
     const steps = [
       { at: 600,  to: 25, status: '正在分析知识点...' },
       { at: 1200, to: 50, status: '正在规划学习顺序...' },
@@ -133,21 +130,19 @@ export default function NewPathPage() {
       { at: 2800, to: 90, status: '即将完成...' },
     ];
     const startTime = Date.now();
-    nodeProgressTimerRef.current = setInterval(() => {
+    nodeProgressTimersRef.current[phaseId] = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const step = steps.find(s => elapsed < s.at) ?? { to: 92, status: '正在整理结果...' };
-      setNodeProgress(step.to);
-      setNodeProgressStatus(step.status);
+      setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: step.to, status: step.status } }));
     }, 200);
   }, []);
 
-  const finishNodeProgress = useCallback(() => {
-    if (nodeProgressTimerRef.current) {
-      clearInterval(nodeProgressTimerRef.current);
-      nodeProgressTimerRef.current = null;
+  const finishNodeProgress = useCallback((phaseId: string) => {
+    if (nodeProgressTimersRef.current[phaseId]) {
+      clearInterval(nodeProgressTimersRef.current[phaseId]);
+      delete nodeProgressTimersRef.current[phaseId];
     }
-    setNodeProgress(100);
-    setNodeProgressStatus('完成！');
+    setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 100, status: '完成！' } }));
   }, []);
 
   if (!user) {
@@ -270,9 +265,9 @@ export default function NewPathPage() {
       return;
     }
 
-    setExpandingPhase(phaseId);
+    setExpandingPhases(prev => new Set(prev).add(phaseId));
     setError('');
-    startNodeProgress();
+    startNodeProgress(phaseId);
     try {
       const res = await fetch('/api/paths/generate/nodes', {
         method: 'POST',
@@ -296,12 +291,16 @@ export default function NewPathPage() {
       // 写入缓存 + 设为可见
       setExpandedPhases((prev) => ({ ...prev, [phaseId]: data.nodes || [] }));
       setVisibleExpanded((prev) => new Set(prev).add(phaseId));
-      finishNodeProgress();
+      finishNodeProgress(phaseId);
     } catch (err) {
       setError(err instanceof Error ? err.message : '展开失败');
-      finishNodeProgress();
+      finishNodeProgress(phaseId);
     } finally {
-      setExpandingPhase(null);
+      setExpandingPhases(prev => {
+        const next = new Set(prev);
+        next.delete(phaseId);
+        return next;
+      });
     }
   };
 
@@ -650,9 +649,9 @@ export default function NewPathPage() {
                   )}
 
                   {/* 展开中进度条 */}
-                  {expandingPhase === phase.id && (
+                  {expandingPhases.has(phase.id) && nodeProgressMap[phase.id] && (
                     <div className="mt-3 bg-[#fef4f3] rounded-lg p-3">
-                      <ProgressBar progress={nodeProgress} status={nodeProgressStatus} />
+                      <ProgressBar progress={nodeProgressMap[phase.id].progress} status={nodeProgressMap[phase.id].status} />
                     </div>
                   )}
 
@@ -660,10 +659,10 @@ export default function NewPathPage() {
                   {!visibleExpanded.has(phase.id) ? (
                     <button
                       onClick={() => handleExpandPhase(phase.id, phase.title)}
-                      disabled={expandingPhase === phase.id || loading}
+                      disabled={expandingPhases.has(phase.id) || loading}
                       className="mt-3 text-sm text-[#f97066] hover:text-[#e0524a] font-medium disabled:opacity-50"
                     >
-                      {expandingPhase === phase.id
+                      {expandingPhases.has(phase.id)
                         ? '⏳ AI 正在生成子节点...'
                         : '+ 展开子节点'}
                     </button>
