@@ -51,36 +51,27 @@ phases 数组包含 4-8 个一级学习阶段。每个阶段：{ id: string, tit
 4. 时间估算偏保守（大多数人能完成的节奏）
 5. 领域本身很窄（如只学一个工具），可以少于 4 个阶段`;
 
-export const FRAMEWORK_PROMPT_WITH_PROFILE = `你是一位资深课程设计师。根据用户画像和学习需求，生成个性化的学习路径。
+export const FRAMEWORK_PROMPT_WITH_PROFILE = `你是一位资深课程设计师。根据用户画像生成学习路径。
 
-【用户画像】
+用户画像：
 {userProfile}
 
-【学习需求】
-- 领域：{domain}
-- 每周时间：{hoursPerWeek}小时
+学习领域：{domain}
+每周时间：{hoursPerWeek}小时
 
-请根据用户画像中的信息来个性化设计路径：
-- 学习目的和深层目标 → 设计有针对性的学习阶段
-- 当前水平 → 合理设置起点难度
-- 感兴趣方向 → 在可选节点中体现偏好
-- 学习风格 → 调整理论vs实践的比例
-- 时间安排 → 合理估算每个阶段的时间
-- 动机强度 → 调整学习节奏（急迫则更紧凑，不急则更深入）
+请根据画像设计个性化路径。
 
-重要：返回纯 JSON，不要任何其他文字，不要 markdown 代码块，不要解释。
+你的回复必须是一个合法的JSON对象，格式如下：
+{"phases":[{"id":"1","title":"阶段标题","description":"描述","estimated_hours":10,"is_required":true,"why":"原因"}]}
 
-格式必须为：
-{ "phases": [ { "id": "1", "title": "...", "description": "...", "estimated_hours": 10, "is_required": true, "why": "..." } ] }
+要求：
+1. phases 数组包含 4-8 个阶段
+2. id 从 "1" 开始递增
+3. is_required: true 表示必修，false 表示可选
+4. 可选阶段最多 2 个
+5. 时间估算偏保守
 
-phases 数组包含 4-8 个一级学习阶段。
-
-设计原则：
-1. 必学节点（is_required:true）形成完整连续的主线
-2. 可选节点（is_required:false）最多 2 个
-3. 节点排序必须符合学习的先后依赖关系
-4. 时间估算偏保守（大多数人能完成的节奏）
-5. 领域本身很窄（如只学一个工具），可以少于 4 个阶段`;
+注意：只返回 JSON，不要返回任何其他文字！`;
 
 export const NODES_PROMPT = `你是一位资深课程设计师。用户确认了一级框架后，为指定阶段展开详细子节点。
 
