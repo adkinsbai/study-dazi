@@ -48,13 +48,17 @@ export async function POST(req: NextRequest) {
       `当前要展开的阶段：${body.phase_id} — ${body.phase_title}`,
     ].join('\n');
 
-    const response = await chatCompletion(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 1200, baseUrl });
+    const response = await chatCompletion(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 2000, baseUrl });
+
+    // 调试日志
+    console.log('[Nodes] AI response length:', response.length);
+    console.log('[Nodes] AI response (first 500 chars):', response.substring(0, 500));
+
     let result: object;
     try {
       result = extractJSON(response);
     } catch (parseErr) {
-      console.error('[Nodes] extractJSON failed. Raw response (last 300 chars):',
-        response.slice(-300));
+      console.error('[Nodes] extractJSON failed. Raw response:', response);
       throw parseErr;
     }
 
