@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai';
 import { extractJSON } from '@/lib/extract-json';
-import { FRAMEWORK_PROMPT } from '@/lib/path-prompts';
+import { FRAMEWORK_PROMPT, FRAMEWORK_PROMPT_WITH_PROFILE } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
 import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
 
@@ -13,6 +13,7 @@ const BodySchema = z.object({
   goal: z.string().optional(),
   hours_per_week: z.number().optional(),
   provider: z.string().optional(),
+  userProfile: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -41,14 +42,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `请先在设置中配置 API Key` }, { status: 400 });
     }
 
-    const userMsg = [
-      `领域：${body.domain}`,
-      `水平：${body.level}`,
-      body.goal && `目标：${body.goal}`,
-      body.hours_per_week && `每周投入：${body.hours_per_week}h`,
-    ].filter(Boolean).join('\n');
+    let systemPrompt: string;
+    let userMsg: string;
 
-    const response = await chatCompletion(provider, apiKey, FRAMEWORK_PROMPT, userMsg, { maxTokens: 1500, baseUrl });
+    if (body.userProfile) {
+      // 使用用户画像版本的 prompt
+      systemPrompt = FRAMEWORK_PROMPT_WITH_PROFILE.replace('{userProfile}', body.userProfile).replace('{domain}', body.domain).replace('{hoursPerWeek}', String(body.hours_per_week || '未指定'));
+      userMsg = `请根据用户画像生成个性化的学习路径。`;
+    } else {
+      // 使用原有的简单 prompt
+      systemPrompt = FRAMEWORK_PROMPT;
+      userMsg = [
+        `领域：${body.domain}`,
+        `水平：${body.level}`,
+        body.goal && `目标：${body.goal}`,
+        body.hours_per_week && `每周投入：${body.hours_per_week}h`,
+      ].filter(Boolean).join('\n');
+    }
+
+    const response = await chatCompletion(provider, apiKey, systemPrompt, userMsg, { maxTokens: 1500, baseUrl });
     let result: object;
     try {
       result = extractJSON(response);

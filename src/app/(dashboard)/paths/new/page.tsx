@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import UserProfileForm, { UserProfileData } from '@/components/path/user-profile-form';
+import UserProfileViewer from '@/components/path/user-profile-viewer';
 
 const PROVIDERS = [
   { id: 'deepseek', name: 'DeepSeek' },
@@ -12,7 +14,7 @@ const PROVIDERS = [
   { id: 'openai-relay', name: 'GPT 中转站' },
 ] as const;
 
-type Step = 'intent' | 'framework' | 'nodes' | 'ready';
+type Step = 'profile' | 'intent' | 'framework' | 'nodes' | 'ready';
 
 interface Phase {
   id: string;
@@ -38,7 +40,7 @@ export default function NewPathPage() {
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
 
-  const [step, setStep] = useState<Step>('intent');
+  const [step, setStep] = useState<Step>('profile');
   const [domain, setDomain] = useState('');
   const [level, setLevel] = useState<'零基础' | '有基础' | '进阶'>('零基础');
   const [goal, setGoal] = useState('');
@@ -47,6 +49,11 @@ export default function NewPathPage() {
   const [error, setError] = useState('');
   const [provider, setProvider] = useState('deepseek');
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
+
+  // 用户画像相关状态
+  const [userProfile, setUserProfile] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<UserProfileData | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -151,6 +158,59 @@ export default function NewPathPage() {
     );
   }
 
+  // 生成用户画像
+  const handleGenerateProfile = async (data: UserProfileData) => {
+    if (!domain.trim()) {
+      setError('请先填写学习领域');
+      return;
+    }
+
+    setError('');
+    setProfileLoading(true);
+    try {
+      const res = await fetch('/api/paths/generate/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          domain,
+          ...data,
+          provider,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || '生成画像失败');
+      }
+      const result = await res.json();
+      setUserProfile(result.profile);
+      setProfileData(data);
+      // 根据问卷数据自动填充原有字段
+      const levelMap: Record<string, '零基础' | '有基础' | '进阶'> = {
+        zero: '零基础',
+        beginner: '有基础',
+        intermediate: '有基础',
+        advanced: '进阶',
+      };
+      setLevel(levelMap[data.level] || '零基础');
+      setHoursPerWeek(String(data.hoursPerWeek));
+      const goalMap: Record<string, string> = {
+        job: '找工作',
+        exam: '考试/作业',
+        project: '做项目',
+        improve: '提升能力',
+        understand: '了解原理',
+      };
+      setGoal(data.goalDetail || goalMap[data.goal] || '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成画像失败');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const handleGenerateFramework = async () => {
     setError('');
     setLoading(true);
@@ -171,6 +231,7 @@ export default function NewPathPage() {
           goal: goal || undefined,
           hours_per_week: hoursPerWeek ? parseInt(hoursPerWeek) : undefined,
           provider,
+          userProfile: userProfile || undefined,
         }),
       });
       if (!res.ok) {
@@ -346,7 +407,88 @@ export default function NewPathPage() {
           </div>
         )}
 
-        {/* Step 1: Intent */}
+        {/* Step 1: 用户画像问卷 */}
+        {step === 'profile' && !userProfile && (
+          <div>
+            {/* 领域输入（先填写领域再开始问卷） */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+              <h2 className="text-lg font-semibold mb-4">你想学什么？</h2>
+
+              {/* 模型选择 */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">AI 模型</label>
+                <div className="flex gap-2">
+                  {PROVIDERS.map(p => {
+                    const isConfigured = configuredProviders.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setProvider(p.id)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors relative ${
+                          provider === p.id
+                            ? 'bg-[#f97066] text-white'
+                            : isConfigured
+                              ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              : 'bg-gray-50 text-gray-400'
+                        }`}
+                      >
+                        {p.name}
+                        {isConfigured && provider !== p.id && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#10b981] rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!configuredProviders.includes(provider) && (
+                  <p className="text-xs text-amber-500 mt-1">
+                    ⚠️ 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">学习领域</label>
+                <input
+                  type="text"
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  placeholder="如：前端开发、Python、UI 设计"
+                  className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#f97066]"
+                />
+              </div>
+            </div>
+
+            {/* 用户画像问卷 */}
+            {domain.trim() && (
+              <UserProfileForm
+                domain={domain}
+                onSubmit={handleGenerateProfile}
+                onBack={() => router.push('/')}
+                loading={profileLoading}
+              />
+            )}
+
+            {/* 画像生成中的进度提示 */}
+            {profileLoading && (
+              <div className="bg-white rounded-2xl shadow-sm p-6 mt-4">
+                <ProgressBar progress={50} status="AI 正在分析你的信息，生成个性化画像..." />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 1.5: 展示用户画像 */}
+        {step === 'profile' && userProfile && (
+          <UserProfileViewer
+            profile={userProfile}
+            onConfirm={() => setStep('intent')}
+            onBack={() => setUserProfile(null)}
+            loading={false}
+          />
+        )}
+
+        {/* Step 2: Intent */}
         {step === 'intent' && (
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 className="text-lg font-semibold">你想学什么？</h2>
@@ -561,7 +703,7 @@ export default function NewPathPage() {
                 disabled={loading}
                 className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                ← 重新生成
+                ← 返回
               </button>
               <button
                 onClick={handleSave}

@@ -45,18 +45,19 @@ model User {
 }
 
 model LearningPath {
-  id         String   @id @default(uuid())
-  userId     String   @map("user_id")
-  title      String
-  domain     String
-  treeData   Json     @map("tree_data")
-  isPublic   Boolean  @default(false) @map("is_public")
-  isTemplate Boolean  @default(false) @map("is_template")
-  forkCount  Int      @default(0) @map("fork_count")
-  forkedFrom String?  @map("forked_from")
-  visibility String   @default("public") @map("visibility")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  domain      String
+  treeData    Json     @map("tree_data")
+  userProfile String?  @map("user_profile") // 用户学习画像（Markdown格式）
+  isPublic    Boolean  @default(false) @map("is_public")
+  isTemplate  Boolean  @default(false) @map("is_template")
+  forkCount   Int      @default(0) @map("fork_count")
+  forkedFrom  String?  @map("forked_from")
+  visibility  String   @default("public") @map("visibility")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   forkedPath   LearningPath?      @relation("ForkSource", fields: [forkedFrom], references: [id], onDelete: SetNull)
   forks        LearningPath[]     @relation("ForkSource")
