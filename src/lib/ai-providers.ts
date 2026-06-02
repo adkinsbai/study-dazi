@@ -24,11 +24,12 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   mimo: {
     name: '小米 MIMO',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
     model: 'mimo-v2.5-pro',
     getKeyUrl: 'https://mimo.xiaomi.com',
     placeholder: 'tp-...',
     customizableUrl: true,
+    format: 'anthropic',
   },
   openai: {
     name: 'OpenAI GPT',
