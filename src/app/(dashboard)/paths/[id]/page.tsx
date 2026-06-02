@@ -307,18 +307,31 @@ export default function PathDetailPage() {
       {/* Edit node modal */}
       {editingNode && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 fade-in" onClick={() => setEditingNode(null)}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm mx-4 w-full space-y-3 modal-enter" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-lg mx-4 w-full space-y-4 modal-enter" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-gray-900">编辑节点</h3>
-            <input type="text" value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="节点名称" />
-            <input type="text" value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="描述" />
-            <input type="number" value={editForm.estimated_hours} onChange={e => setEditForm(p => ({ ...p, estimated_hours: +e.target.value }))}
-              className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="小时" />
-            <div className="flex gap-2">
-              <button onClick={handleSaveEdit} className="flex-1 py-2 rounded-full bg-[#f97066] text-sm text-white hover:bg-[#e0524a] btn-press">确认</button>
-              <button onClick={handleAddChild} className="py-2 px-3 rounded-full border border-gray-200 text-sm hover:bg-gray-50 btn-press"><Plus size={14} className="inline mr-0.5" /> 子节点</button>
-              <button onClick={handleDeleteNode} className="py-2 px-3 rounded-full border border-gray-200 text-sm text-red-500 hover:bg-red-50 btn-press"><Trash2 size={14} /></button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">节点名称</label>
+              <input type="text" value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="节点名称" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+              <textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                rows={4}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6] resize-none" placeholder="描述" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">预计时长</label>
+              <div className="flex items-center gap-2">
+                <input type="number" value={editForm.estimated_hours} onChange={e => setEditForm(p => ({ ...p, estimated_hours: +e.target.value }))}
+                  className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6]" placeholder="小时" />
+                <span className="text-sm text-gray-500">小时</span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={handleSaveEdit} className="flex-1 py-2.5 rounded-full bg-[#f97066] text-sm font-semibold text-white hover:bg-[#e0524a] btn-press">确认</button>
+              <button onClick={handleAddChild} className="py-2.5 px-4 rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 btn-press"><Plus size={14} className="inline mr-1" /> 子节点</button>
+              <button onClick={handleDeleteNode} className="py-2.5 px-4 rounded-full border border-gray-200 text-sm font-medium text-red-500 hover:bg-red-50 btn-press"><Trash2 size={14} /></button>
             </div>
           </div>
         </div>
