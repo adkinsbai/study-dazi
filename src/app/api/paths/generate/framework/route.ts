@@ -44,11 +44,16 @@ export async function POST(req: NextRequest) {
 
     let systemPrompt: string;
     let userMsg: string;
+    let maxTokens = 1500;
 
     if (body.userProfile) {
       // 使用用户画像版本的 prompt
-      systemPrompt = FRAMEWORK_PROMPT_WITH_PROFILE.replace('{userProfile}', body.userProfile).replace('{domain}', body.domain).replace('{hoursPerWeek}', String(body.hours_per_week || '未指定'));
+      systemPrompt = FRAMEWORK_PROMPT_WITH_PROFILE
+        .replace('{userProfile}', body.userProfile)
+        .replace('{domain}', body.domain)
+        .replace('{hoursPerWeek}', String(body.hours_per_week || '未指定'));
       userMsg = `请根据用户画像生成个性化的学习路径。`;
+      maxTokens = 2500; // 用户画像较长，需要更大的 token 限制
     } else {
       // 使用原有的简单 prompt
       systemPrompt = FRAMEWORK_PROMPT;
@@ -60,13 +65,18 @@ export async function POST(req: NextRequest) {
       ].filter(Boolean).join('\n');
     }
 
-    const response = await chatCompletion(provider, apiKey, systemPrompt, userMsg, { maxTokens: 1500, baseUrl });
+    const response = await chatCompletion(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
+
+    // 调试日志
+    console.log('[Framework] AI response length:', response.length);
+    console.log('[Framework] AI response (first 500 chars):', response.substring(0, 500));
+    console.log('[Framework] AI response (last 500 chars):', response.substring(response.length - 500));
+
     let result: object;
     try {
       result = extractJSON(response);
     } catch (parseErr) {
-      console.error('[Framework] extractJSON failed. Raw response (last 300 chars):',
-        response.slice(-300));
+      console.error('[Framework] extractJSON failed. Raw response:', response);
       throw parseErr;
     }
 
