@@ -24,12 +24,11 @@ export const AI_PROVIDERS: Record<string, AIProviderConfig> = {
   },
   mimo: {
     name: '小米 MIMO',
-    baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
     model: 'mimo-v2.5-pro',
     getKeyUrl: 'https://mimo.xiaomi.com',
     placeholder: 'tp-...',
     customizableUrl: true,
-    format: 'anthropic',
   },
   openai: {
     name: 'OpenAI GPT',
@@ -55,8 +54,15 @@ export function getProviderConfig(provider: string, customBaseUrl?: string): AIP
   if (!config) {
     throw new Error(`不支持的 AI 模型: ${provider}。可选: ${Object.keys(AI_PROVIDERS).join(', ')}`);
   }
-  if (customBaseUrl) {
-    return { ...config, baseUrl: customBaseUrl };
+
+  // 自动修复旧的 mimo URL
+  let effectiveBaseUrl = customBaseUrl;
+  if (provider === 'mimo' && customBaseUrl === 'https://token-plan-cn.xiaomimimo.com/anthropic') {
+    effectiveBaseUrl = 'https://token-plan-cn.xiaomimimo.com/v1';
+  }
+
+  if (effectiveBaseUrl) {
+    return { ...config, baseUrl: effectiveBaseUrl };
   }
   return config;
 }

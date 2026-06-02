@@ -33,15 +33,37 @@ export async function POST(req: NextRequest) {
     }
 
     const config = getProviderConfig(body.provider, baseUrl);
-    const url = `${config.baseUrl}/chat/completions`;
+    const format = config.format || 'openai';
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
+    let url: string;
+    let headers: Record<string, string>;
+    let bodyData: object;
+
+    if (format === 'anthropic') {
+      // Anthropic 格式: POST /v1/messages
+      url = `${config.baseUrl}/v1/messages`;
+      headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      };
+      bodyData = {
+        model: config.model,
+        system: 'Reply with exactly one word: ok',
+        messages: [
+          { role: 'user', content: 'ping' },
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      };
+    } else {
+      // OpenAI 格式: POST /chat/completions
+      url = `${config.baseUrl}/chat/completions`;
+      headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
+      };
+      bodyData = {
         model: config.model,
         messages: [
           { role: 'system', content: 'Reply with exactly one word: ok' },
@@ -49,7 +71,13 @@ export async function POST(req: NextRequest) {
         ],
         temperature: 0,
         max_tokens: 10,
-      }),
+      };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(bodyData),
     });
 
     if (!res.ok) {
@@ -65,7 +93,14 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || 'ok';
+    let reply: string;
+
+    if (format === 'anthropic') {
+      reply = data.content?.[0]?.text?.trim() || 'ok';
+    } else {
+      reply = data.choices?.[0]?.message?.content?.trim() || 'ok';
+    }
+
     return NextResponse.json({ ok: true, reply, url, model: config.model });
   } catch (err) {
     if (err instanceof z.ZodError) {
