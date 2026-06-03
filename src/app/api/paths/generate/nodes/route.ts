@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { chatCompletionStream } from '@/lib/ai';
-import { extractJSON } from '@/lib/extract-json';
+import { extractJSON, isTruncatedJSON } from '@/lib/extract-json';
 import { NODES_PROMPT } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
 import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
@@ -14,6 +14,8 @@ const BodySchema = z.object({
   phase_title: z.string().min(1),
   provider: z.string().optional(),
 });
+
+const STOP = ['\n\n'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,41 +52,65 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 1500, baseUrl });
-      const reader = aiStream.getReader();
-      let fullText = '';
-      let chunkCount = 0;
+      const MAX_RETRIES = 1;
+      let attempt = 0;
+      let currentMaxTokens = 1800;
 
       const stream = new ReadableStream({
         async pull(controller) {
           const encoder = new TextEncoder();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log('[Nodes] Stream done. Total chunks:', chunkCount, 'Text length:', fullText.length);
-              try {
-                const result = extractJSON(fullText);
-                const normalized = Array.isArray(result) ? { nodes: result } : result;
-                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-              } catch (parseErr) {
-                console.error('[Nodes] extractJSON failed. Text length:', fullText.length);
-                console.error('[Nodes] Raw text (first 500):', fullText.substring(0, 500));
-                console.error('[Nodes] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
-                controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
+
+          if (attempt === 0 || (attempt <= MAX_RETRIES)) {
+            attempt++;
+            let fullText = '';
+            let chunkCount = 0;
+
+            const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: currentMaxTokens, baseUrl, stop: STOP });
+            const reader = aiStream.getReader();
+
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                fullText += String(value);
+                chunkCount++;
+                controller.enqueue(
+                  encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+                );
               }
+            } catch (e) {
+              reader.cancel();
+              throw e;
+            }
+
+            console.log(`[Nodes] Attempt ${attempt} done. Chunks: ${chunkCount}, Length: ${fullText.length}`);
+
+            try {
+              const result = extractJSON(fullText);
+              const normalized = Array.isArray(result) ? { nodes: result } : result;
+              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+              controller.close();
+              return;
+            } catch (parseErr) {
+              if (isTruncatedJSON(fullText) && attempt <= MAX_RETRIES) {
+                console.warn(`[Nodes] Truncated JSON, retrying (${currentMaxTokens} -> ${currentMaxTokens + 1500})`);
+                currentMaxTokens += 1500;
+                controller.enqueue(encoder.encode(`event: retry\ndata: ${JSON.stringify({ attempt, maxTokens: currentMaxTokens })}\n\n`));
+                return;
+              }
+              console.error('[Nodes] extractJSON failed. Text length:', fullText.length);
+              console.error('[Nodes] Raw text (first 500):', fullText.substring(0, 500));
+              console.error('[Nodes] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
+              controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
               controller.close();
               return;
             }
-            fullText += String(value);
-            chunkCount++;
-            controller.enqueue(
-              encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-            );
           }
+
+          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '重试次数用尽' })}\n\n`));
+          controller.close();
         },
-        cancel() {
-          reader.cancel();
-        },
+        cancel() {},
       });
 
       return new Response(stream, {

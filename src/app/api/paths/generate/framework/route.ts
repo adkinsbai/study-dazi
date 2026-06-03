@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { chatCompletionStream } from '@/lib/ai';
-import { extractJSON } from '@/lib/extract-json';
+import { extractJSON, isTruncatedJSON } from '@/lib/extract-json';
 import { FRAMEWORK_PROMPT, FRAMEWORK_PROMPT_WITH_PROFILE } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
 import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
@@ -15,6 +15,8 @@ const BodySchema = z.object({
   provider: z.string().optional(),
   userProfile: z.string().optional(),
 });
+
+const STOP = ['\n\n'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     let systemPrompt: string;
     let userMsg: string;
-    let maxTokens = 1800;
+    let maxTokens = 2000;
 
     if (body.userProfile) {
       systemPrompt = FRAMEWORK_PROMPT_WITH_PROFILE
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
         .replace('{domain}', body.domain)
         .replace('{hoursPerWeek}', String(body.hours_per_week || '未指定'));
       userMsg = `请根据用户画像生成个性化的学习路径。`;
-      maxTokens = 2200;
+      maxTokens = 2500;
     } else {
       systemPrompt = FRAMEWORK_PROMPT;
       userMsg = [
@@ -65,41 +67,71 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
-      const reader = aiStream.getReader();
-      let fullText = '';
-      let chunkCount = 0;
+      const MAX_RETRIES = 1;
+      let attempt = 0;
+      let currentMaxTokens = maxTokens;
 
       const stream = new ReadableStream({
         async pull(controller) {
           const encoder = new TextEncoder();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log('[Framework] Stream done. Total chunks:', chunkCount, 'Text length:', fullText.length);
-              try {
-                const result = extractJSON(fullText);
-                const normalized = Array.isArray(result) ? { phases: result } : result;
-                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-              } catch (parseErr) {
-                console.error('[Framework] extractJSON failed. Text length:', fullText.length);
-                console.error('[Framework] Raw text (first 500):', fullText.substring(0, 500));
-                console.error('[Framework] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
-                controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
+
+          // 首次或重试时创建新的 AI 流
+          if (attempt === 0 || (attempt <= MAX_RETRIES)) {
+            attempt++;
+            let fullText = '';
+            let chunkCount = 0;
+
+            const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens: currentMaxTokens, baseUrl, stop: STOP });
+            const reader = aiStream.getReader();
+
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                fullText += String(value);
+                chunkCount++;
+                controller.enqueue(
+                  encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+                );
               }
+            } catch (e) {
+              reader.cancel();
+              throw e;
+            }
+
+            console.log(`[Framework] Attempt ${attempt} done. Chunks: ${chunkCount}, Length: ${fullText.length}`);
+
+            // 尝试解析
+            try {
+              const result = extractJSON(fullText);
+              const normalized = Array.isArray(result) ? { phases: result } : result;
+              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+              controller.close();
+              return;
+            } catch (parseErr) {
+              // 检测是否截断，且还有重试机会
+              if (isTruncatedJSON(fullText) && attempt <= MAX_RETRIES) {
+                console.warn(`[Framework] Truncated JSON detected, retrying with higher max_tokens (${currentMaxTokens} -> ${currentMaxTokens + 1500})`);
+                currentMaxTokens += 1500;
+                controller.enqueue(encoder.encode(`event: retry\ndata: ${JSON.stringify({ attempt, maxTokens: currentMaxTokens })}\n\n`));
+                // pull 会被再次调用，进入下一次循环
+                return;
+              }
+              // 非截断错误或重试用尽
+              console.error('[Framework] extractJSON failed. Text length:', fullText.length);
+              console.error('[Framework] Raw text (first 500):', fullText.substring(0, 500));
+              console.error('[Framework] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
+              controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
               controller.close();
               return;
             }
-            fullText += String(value);
-            chunkCount++;
-            controller.enqueue(
-              encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-            );
           }
+
+          // 不应该到这里
+          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '重试次数用尽' })}\n\n`));
+          controller.close();
         },
-        cancel() {
-          reader.cancel();
-        },
+        cancel() {},
       });
 
       return new Response(stream, {

@@ -106,7 +106,7 @@ export async function chatCompletionStream(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  options?: { temperature?: number; maxTokens?: number; baseUrl?: string }
+  options?: { temperature?: number; maxTokens?: number; baseUrl?: string; stop?: string[] }
 ): Promise<ReadableStream<string>> {
   const config = getProviderConfig(provider, options?.baseUrl);
 
@@ -126,24 +126,27 @@ export async function chatCompletionStream(
 async function chatOpenAIStream(
   config: AIProviderConfig, apiKey: string,
   systemPrompt: string, userMessage: string,
-  options?: { temperature?: number; maxTokens?: number }
+  options?: { temperature?: number; maxTokens?: number; stop?: string[] }
 ): Promise<ReadableStream<string>> {
+  const reqBody: Record<string, unknown> = {
+    model: config.model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+    ],
+    temperature: options?.temperature ?? 0.1,
+    max_tokens: options?.maxTokens ?? 2048,
+    stream: true,
+  };
+  if (options?.stop) reqBody.stop = options.stop;
+
   const res = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: config.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      temperature: options?.temperature ?? 0.1,
-      max_tokens: options?.maxTokens ?? 2048,
-      stream: true,
-    }),
+    body: JSON.stringify(reqBody),
   });
 
   if (!res.ok) {
@@ -204,8 +207,18 @@ async function chatOpenAIStream(
 async function chatAnthropicStream(
   config: AIProviderConfig, apiKey: string,
   systemPrompt: string, userMessage: string,
-  options?: { temperature?: number; maxTokens?: number }
+  options?: { temperature?: number; maxTokens?: number; stop?: string[] }
 ): Promise<ReadableStream<string>> {
+  const reqBody: Record<string, unknown> = {
+    model: config.model,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }],
+    temperature: options?.temperature ?? 0.1,
+    max_tokens: options?.maxTokens ?? 2048,
+    stream: true,
+  };
+  if (options?.stop) reqBody.stop_sequences = options.stop;
+
   const res = await fetch(`${config.baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
@@ -213,14 +226,7 @@ async function chatAnthropicStream(
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: config.model,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-      temperature: options?.temperature ?? 0.1,
-      max_tokens: options?.maxTokens ?? 2048,
-      stream: true,
-    }),
+    body: JSON.stringify(reqBody),
   });
 
   if (!res.ok) {

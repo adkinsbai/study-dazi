@@ -95,6 +95,7 @@ export default function NewPathPage() {
   const consumeSSE = useCallback(async (
     res: Response,
     onProgress: (chunks: number) => void,
+    onRetry?: (attempt: number) => void,
   ): Promise<unknown> => {
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
@@ -113,6 +114,8 @@ export default function NewPathPage() {
           const data = line.slice(6);
           if (eventType === 'progress') {
             try { onProgress(JSON.parse(data).chunks); } catch { /* ignore */ }
+          } else if (eventType === 'retry') {
+            try { onRetry?.(JSON.parse(data).attempt); } catch { /* ignore */ }
           } else if (eventType === 'done') {
             return JSON.parse(data).result;
           } else if (eventType === 'error') {
@@ -231,6 +234,9 @@ export default function NewPathPage() {
         const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
         setProgress(pct);
         setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+      }, (attempt) => {
+        setProgress(5);
+        setProgressStatus(`响应被截断，正在重试 (第${attempt + 1}次)...`);
       }) as { phases?: Record<string, unknown>[] };
       // DeepSeek 可能返回数字 id，统一转字符串
       let phases: Phase[] = [];
@@ -291,6 +297,8 @@ export default function NewPathPage() {
       const data = await consumeSSE(res, (chunks) => {
         const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
         setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
+      }, (attempt) => {
+        setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 5, status: `响应被截断，正在重试 (第${attempt + 1}次)...` } }));
       }) as { nodes?: TreeNode[] };
       const nodes: TreeNode[] = data.nodes || [];
       // 写入缓存 + 设为可见
