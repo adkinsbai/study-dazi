@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { chatCompletion } from '@/lib/ai';
+import { chatCompletion, chatCompletionStream } from '@/lib/ai';
 import { extractJSON } from '@/lib/extract-json';
 import { FRAMEWORK_PROMPT, FRAMEWORK_PROMPT_WITH_PROFILE } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
@@ -65,6 +65,57 @@ export async function POST(req: NextRequest) {
       ].filter(Boolean).join('\n');
     }
 
+    // 流式模式
+    const wantStream = req.headers.get('X-Stream') === 'true';
+
+    if (wantStream) {
+      const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
+      const reader = aiStream.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let chunkCount = 0;
+
+      const stream = new ReadableStream({
+        async pull(controller) {
+          const encoder = new TextEncoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              // 解析最终结果
+              try {
+                let result: object = extractJSON(fullText);
+                const normalized = Array.isArray(result) ? { phases: result } : result;
+                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+              } catch (parseErr) {
+                console.error('[Framework] extractJSON failed. Raw response:', fullText);
+                controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '解析 AI 响应失败' })}\n\n`));
+              }
+              controller.close();
+              return;
+            }
+            const text = typeof value === 'string' ? value : decoder.decode(value, { stream: true });
+            fullText += text;
+            chunkCount++;
+            controller.enqueue(
+              new TextEncoder().encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+            );
+          }
+        },
+        cancel() {
+          reader.cancel();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    }
+
+    // 非流式模式（原有逻辑）
     const response = await chatCompletion(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
 
     // 调试日志

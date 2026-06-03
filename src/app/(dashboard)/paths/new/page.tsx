@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -82,69 +82,45 @@ export default function NewPathPage() {
   // 支持多个并行展开的进度状态
   const [expandingPhases, setExpandingPhases] = useState<Set<string>>(new Set());
   const [nodeProgressMap, setNodeProgressMap] = useState<Record<string, { progress: number; status: string }>>({});
-  const nodeProgressTimersRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
   // 用户选择的子节点：{ phaseId: Set<nodeId> }
   const [selectedNodes, setSelectedNodes] = useState<Record<string, Set<string>>>({});
 
   // 进度条状态
   const [progress, setProgress] = useState(0);
   const [progressStatus, setProgressStatus] = useState('');
-  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startProgress = useCallback(() => {
-    setProgress(0);
-    setProgressStatus('正在连接 AI...');
-    
-    // 模拟进度：AI 生成通常需要 4-8 秒
-    const steps = [
-      { at: 800,  to: 15, status: '正在分析学习领域...' },
-      { at: 1600, to: 30, status: '正在设计课程框架...' },
-      { at: 2500, to: 50, status: '正在规划学习阶段...' },
-      { at: 3500, to: 65, status: '正在估算学习时长...' },
-      { at: 4500, to: 78, status: '正在优化阶段排序...' },
-      { at: 5500, to: 88, status: '即将完成...' },
-    ];
-
-    const startTime = Date.now();
-    progressTimerRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const step = steps.find(s => elapsed < s.at) ?? { to: 92, status: '正在整理结果...' };
-      setProgress(step.to);
-      setProgressStatus(step.status);
-    }, 200);
-  }, []);
-
-  const finishProgress = useCallback(() => {
-    if (progressTimerRef.current) {
-      clearInterval(progressTimerRef.current);
-      progressTimerRef.current = null;
+  /** 消费 SSE 流式响应，返回最终 result */
+  const consumeSSE = useCallback(async (
+    res: Response,
+    onProgress: (chunks: number) => void,
+  ): Promise<unknown> => {
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      let eventType = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (eventType === 'progress') {
+            try { onProgress(JSON.parse(data).chunks); } catch { /* ignore */ }
+          } else if (eventType === 'done') {
+            return JSON.parse(data).result;
+          } else if (eventType === 'error') {
+            throw new Error(JSON.parse(data).message);
+          }
+          eventType = '';
+        }
+      }
     }
-    setProgress(100);
-    setProgressStatus('完成！');
-  }, []);
-
-  const startNodeProgress = useCallback((phaseId: string) => {
-    setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 0, status: '正在生成子节点...' } }));
-    const steps = [
-      { at: 600,  to: 25, status: '正在分析知识点...' },
-      { at: 1200, to: 50, status: '正在规划学习顺序...' },
-      { at: 2000, to: 75, status: '正在编写验收标准...' },
-      { at: 2800, to: 90, status: '即将完成...' },
-    ];
-    const startTime = Date.now();
-    nodeProgressTimersRef.current[phaseId] = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const step = steps.find(s => elapsed < s.at) ?? { to: 92, status: '正在整理结果...' };
-      setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: step.to, status: step.status } }));
-    }, 200);
-  }, []);
-
-  const finishNodeProgress = useCallback((phaseId: string) => {
-    if (nodeProgressTimersRef.current[phaseId]) {
-      clearInterval(nodeProgressTimersRef.current[phaseId]);
-      delete nodeProgressTimersRef.current[phaseId];
-    }
-    setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 100, status: '完成！' } }));
+    throw new Error('AI 响应中断');
   }, []);
 
   if (!user) {
@@ -214,13 +190,15 @@ export default function NewPathPage() {
     // 重新生成时清空节点缓存
     setExpandedPhases({});
     setVisibleExpanded(new Set());
-    startProgress();
+    setProgress(5);
+    setProgressStatus('正在连接 AI...');
     try {
       const res = await fetch('/api/paths/generate/framework', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'X-Stream': 'true',
         },
         body: JSON.stringify({
           domain,
@@ -235,12 +213,16 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '生成失败');
       }
-      const data = await res.json();
+      const data = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
+        setProgress(pct);
+        setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+      }) as { phases?: Record<string, unknown>[] };
       // DeepSeek 可能返回数字 id，统一转字符串
       let phases: Phase[] = [];
       try {
         const raw = Array.isArray(data.phases) ? data.phases : [];
-        phases = raw.map((p: Record<string, unknown>) => ({
+        phases = raw.map((p) => ({
           ...p,
           id: String(p.id ?? ''),
         })) as Phase[];
@@ -251,10 +233,12 @@ export default function NewPathPage() {
       }
       setPhases(phases);
       setStep('framework');
-      finishProgress();
+      setProgress(100);
+      setProgressStatus('完成！');
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
-      finishProgress();
+      setProgress(0);
+      setProgressStatus('');
     } finally {
       setLoading(false);
     }
@@ -269,13 +253,14 @@ export default function NewPathPage() {
 
     setExpandingPhases(prev => new Set(prev).add(phaseId));
     setError('');
-    startNodeProgress(phaseId);
+    setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 5, status: '正在连接 AI...' } }));
     try {
       const res = await fetch('/api/paths/generate/nodes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'X-Stream': 'true',
         },
         body: JSON.stringify({
           domain,
@@ -289,20 +274,23 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '展开失败');
       }
-      const data = await res.json();
-      const nodes = data.nodes || [];
+      const data = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
+        setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
+      }) as { nodes?: TreeNode[] };
+      const nodes: TreeNode[] = data.nodes || [];
       // 写入缓存 + 设为可见
       setExpandedPhases((prev) => ({ ...prev, [phaseId]: nodes }));
       setVisibleExpanded((prev) => new Set(prev).add(phaseId));
       // 默认全选所有子节点
       setSelectedNodes((prev) => ({
         ...prev,
-        [phaseId]: new Set(nodes.map((n: TreeNode) => n.id)),
+        [phaseId]: new Set(nodes.map((n) => n.id)),
       }));
-      finishNodeProgress(phaseId);
+      setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 100, status: '完成！' } }));
     } catch (err) {
       setError(err instanceof Error ? err.message : '展开失败');
-      finishNodeProgress(phaseId);
+      setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: 0, status: '' } }));
     } finally {
       setExpandingPhases(prev => {
         const next = new Set(prev);
