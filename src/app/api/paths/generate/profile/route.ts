@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
             const { done, value } = await reader.read();
             if (done) {
               console.log('[Profile] Stream done. Chunks:', chunkCount, 'Length:', fullText.length);
-              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ profile: fullText.trim() })}\n\n`));
+              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: { profile: fullText.trim() } })}\n\n`));
               controller.close();
               return;
             }
