@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     let systemPrompt: string;
     let userMsg: string;
-    let maxTokens = 3000;
+    let maxTokens = 1800;
 
     if (body.userProfile) {
       systemPrompt = FRAMEWORK_PROMPT_WITH_PROFILE
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         .replace('{domain}', body.domain)
         .replace('{hoursPerWeek}', String(body.hours_per_week || '未指定'));
       userMsg = `请根据用户画像生成个性化的学习路径。`;
-      maxTokens = 4000;
+      maxTokens = 2200;
     } else {
       systemPrompt = FRAMEWORK_PROMPT;
       userMsg = [

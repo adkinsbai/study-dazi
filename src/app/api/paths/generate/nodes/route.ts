@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 3000, baseUrl });
+      const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 1500, baseUrl });
       const reader = aiStream.getReader();
       let fullText = '';
       let chunkCount = 0;
