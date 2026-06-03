@@ -69,50 +69,63 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
-      const reader = aiStream.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      let chunkCount = 0;
+      try {
+        const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
+        const reader = aiStream.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let chunkCount = 0;
 
-      const stream = new ReadableStream({
-        async pull(controller) {
-          const encoder = new TextEncoder();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              // 解析最终结果
-              try {
-                let result: object = extractJSON(fullText);
-                const normalized = Array.isArray(result) ? { phases: result } : result;
-                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-              } catch (parseErr) {
-                console.error('[Framework] extractJSON failed. Raw response:', fullText);
-                controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '解析 AI 响应失败' })}\n\n`));
+        const stream = new ReadableStream({
+          async pull(controller) {
+            const encoder = new TextEncoder();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                // 解析最终结果，失败时回退到非流式
+                try {
+                  const result = extractJSON(fullText);
+                  const normalized = Array.isArray(result) ? { phases: result } : result;
+                  controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+                } catch (parseErr) {
+                  console.warn('[Framework] extractJSON failed on stream, falling back to non-stream. Raw:', fullText.substring(0, 300));
+                  try {
+                    const fallback = await chatCompletion(provider, apiKey, systemPrompt, userMsg, { maxTokens, baseUrl });
+                    const result = extractJSON(fallback);
+                    const normalized = Array.isArray(result) ? { phases: result } : result;
+                    controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+                  } catch (fallbackErr) {
+                    console.error('[Framework] Fallback also failed:', fallbackErr);
+                    controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
+                  }
+                }
+                controller.close();
+                return;
               }
-              controller.close();
-              return;
+              const text = typeof value === 'string' ? value : decoder.decode(value, { stream: true });
+              fullText += text;
+              chunkCount++;
+              controller.enqueue(
+                encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+              );
             }
-            const text = typeof value === 'string' ? value : decoder.decode(value, { stream: true });
-            fullText += text;
-            chunkCount++;
-            controller.enqueue(
-              new TextEncoder().encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-            );
-          }
-        },
-        cancel() {
-          reader.cancel();
-        },
-      });
+          },
+          cancel() {
+            reader.cancel();
+          },
+        });
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        });
+      } catch (streamErr) {
+        // 流式初始化失败，回退到非流式
+        console.warn('[Framework] Stream init failed, falling back:', streamErr);
+      }
     }
 
     // 非流式模式（原有逻辑）

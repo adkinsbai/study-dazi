@@ -54,6 +54,8 @@ export default function NewPathPage() {
   const [userProfile, setUserProfile] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<UserProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileProgress, setProfileProgress] = useState(0);
+  const [profileProgressStatus, setProfileProgressStatus] = useState('');
 
   useEffect(() => {
     if (token) {
@@ -140,12 +142,15 @@ export default function NewPathPage() {
 
     setError('');
     setProfileLoading(true);
+    setProfileProgress(5);
+    setProfileProgressStatus('正在连接 AI...');
     try {
       const res = await fetch('/api/paths/generate/profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'X-Stream': 'true',
         },
         body: JSON.stringify({
           domain,
@@ -157,8 +162,24 @@ export default function NewPathPage() {
         const errData = await res.json();
         throw new Error(errData.error || '生成画像失败');
       }
-      const result = await res.json();
-      setUserProfile(result.profile);
+
+      // 检查是否是 SSE 响应
+      const contentType = res.headers.get('content-type') || '';
+      let profileText: string;
+      if (contentType.includes('text/event-stream')) {
+        const result = await consumeSSE(res, (chunks) => {
+          const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
+          setProfileProgress(pct);
+          setProfileProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+        }) as { profile?: string };
+        profileText = result.profile || '';
+      } else {
+        const result = await res.json();
+        profileText = result.profile || '';
+      }
+      setProfileProgress(100);
+      setProfileProgressStatus('完成！');
+      setUserProfile(profileText);
       setProfileData(data);
       // 根据问卷数据自动填充原有字段
       const levelMap: Record<string, '零基础' | '有基础' | '进阶'> = {
@@ -179,6 +200,8 @@ export default function NewPathPage() {
       setGoal(data.goalDetail || goalMap[data.goal] || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成画像失败');
+      setProfileProgress(0);
+      setProfileProgressStatus('');
     } finally {
       setProfileLoading(false);
     }
@@ -213,11 +236,18 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '生成失败');
       }
-      const data = await consumeSSE(res, (chunks) => {
-        const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
-        setProgress(pct);
-        setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
-      }) as { phases?: Record<string, unknown>[] };
+      // 检查是否是 SSE 响应（流式初始化失败时会回退到普通 JSON）
+      const contentType = res.headers.get('content-type') || '';
+      let data: { phases?: Record<string, unknown>[] };
+      if (contentType.includes('text/event-stream')) {
+        data = await consumeSSE(res, (chunks) => {
+          const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
+          setProgress(pct);
+          setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+        }) as { phases?: Record<string, unknown>[] };
+      } else {
+        data = await res.json();
+      }
       // DeepSeek 可能返回数字 id，统一转字符串
       let phases: Phase[] = [];
       try {
@@ -274,10 +304,16 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '展开失败');
       }
-      const data = await consumeSSE(res, (chunks) => {
-        const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
-        setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
-      }) as { nodes?: TreeNode[] };
+      const nodeContentType = res.headers.get('content-type') || '';
+      let data: { nodes?: TreeNode[] };
+      if (nodeContentType.includes('text/event-stream')) {
+        data = await consumeSSE(res, (chunks) => {
+          const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
+          setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
+        }) as { nodes?: TreeNode[] };
+      } else {
+        data = await res.json();
+      }
       const nodes: TreeNode[] = data.nodes || [];
       // 写入缓存 + 设为可见
       setExpandedPhases((prev) => ({ ...prev, [phaseId]: nodes }));
@@ -487,7 +523,7 @@ export default function NewPathPage() {
             {/* 画像生成中的进度提示 */}
             {profileLoading && (
               <div className="bg-white rounded-2xl shadow-sm p-6 mt-4">
-                <ProgressBar progress={50} status="AI 正在分析你的信息，生成个性化画像..." />
+                <ProgressBar progress={profileProgress} status={profileProgressStatus || 'AI 正在分析你的信息，生成个性化画像...'} />
               </div>
             )}
           </div>
