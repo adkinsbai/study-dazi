@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { chatCompletion, chatCompletionStream } from '@/lib/ai';
+import { chatCompletionStream } from '@/lib/ai';
 import { extractJSON } from '@/lib/extract-json';
 import { NODES_PROMPT } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
 
     const provider = body.provider || DEFAULT_PROVIDER;
 
-    // 从 UserApiKey 表获取 key，回退到旧字段和环境变量
     const userApiKey = await prisma.userApiKey.findUnique({
       where: {
         userId_provider: { userId: payload.sub, provider },
@@ -48,87 +47,56 @@ export async function POST(req: NextRequest) {
       `当前要展开的阶段：${body.phase_id} — ${body.phase_title}`,
     ].join('\n');
 
-    // 流式模式
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      try {
-        const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 2000, baseUrl });
-        const reader = aiStream.getReader();
-        const decoder = new TextDecoder();
-        let fullText = '';
-        let chunkCount = 0;
+      const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 3000, baseUrl });
+      const reader = aiStream.getReader();
+      let fullText = '';
+      let chunkCount = 0;
 
-        const stream = new ReadableStream({
-          async pull(controller) {
-            const encoder = new TextEncoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                try {
-                  const result = extractJSON(fullText);
-                  const normalized = Array.isArray(result) ? { nodes: result } : result;
-                  controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-                } catch (parseErr) {
-                  console.warn('[Nodes] extractJSON failed on stream, falling back. Raw:', fullText.substring(0, 300));
-                  try {
-                    const fallback = await chatCompletion(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 2000, baseUrl });
-                    const result = extractJSON(fallback);
-                    const normalized = Array.isArray(result) ? { nodes: result } : result;
-                    controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-                  } catch (fallbackErr) {
-                    console.error('[Nodes] Fallback also failed:', fallbackErr);
-                    controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
-                  }
-                }
-                controller.close();
-                return;
+      const stream = new ReadableStream({
+        async pull(controller) {
+          const encoder = new TextEncoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              console.log('[Nodes] Stream done. Total chunks:', chunkCount, 'Text length:', fullText.length);
+              try {
+                const result = extractJSON(fullText);
+                const normalized = Array.isArray(result) ? { nodes: result } : result;
+                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
+              } catch (parseErr) {
+                console.error('[Nodes] extractJSON failed. Text length:', fullText.length);
+                console.error('[Nodes] Raw text (first 500):', fullText.substring(0, 500));
+                console.error('[Nodes] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
+                controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
               }
-              const text = typeof value === 'string' ? value : decoder.decode(value, { stream: true });
-              fullText += text;
-              chunkCount++;
-              controller.enqueue(
-                encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-              );
+              controller.close();
+              return;
             }
-          },
-          cancel() {
-            reader.cancel();
-          },
-        });
+            fullText += String(value);
+            chunkCount++;
+            controller.enqueue(
+              encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+            );
+          }
+        },
+        cancel() {
+          reader.cancel();
+        },
+      });
 
-        return new Response(stream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        });
-      } catch (streamErr) {
-        // 流式初始化失败，回退到非流式
-        console.warn('[Nodes] Stream init failed, falling back:', streamErr);
-      }
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
     }
 
-    // 非流式模式（原有逻辑）
-    const response = await chatCompletion(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: 2000, baseUrl });
-
-    // 调试日志
-    console.log('[Nodes] AI response length:', response.length);
-    console.log('[Nodes] AI response (first 500 chars):', response.substring(0, 500));
-
-    let result: object;
-    try {
-      result = extractJSON(response);
-    } catch (parseErr) {
-      console.error('[Nodes] extractJSON failed. Raw response:', response);
-      throw parseErr;
-    }
-
-    // 防御：AI 可能返回裸数组而非 { nodes: [...] }，统一归一化
-    const normalized = Array.isArray(result) ? { nodes: result } : result;
-
-    return NextResponse.json(normalized);
+    return NextResponse.json({ error: '请使用流式模式' }, { status: 400 });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: '参数错误', details: err.issues }, { status: 422 });

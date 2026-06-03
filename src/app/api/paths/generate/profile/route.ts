@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAccessToken } from '@/lib/auth';
-import { chatCompletion, chatCompletionStream } from '@/lib/ai';
+import { chatCompletionStream } from '@/lib/ai';
 import { PROFILE_PROMPT } from '@/lib/path-prompts';
 import prisma from '@/lib/prisma';
 
@@ -92,64 +92,48 @@ export async function POST(req: NextRequest) {
 
     // 调用 AI 生成用户画像
     console.log('[Profile] 开始生成用户画像...', { provider, domain: body.domain });
-    console.log('[Profile] userMsg 长度:', userMsg.length);
 
-    // 流式模式
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      try {
-        const aiStream = await chatCompletionStream(provider, saved.apiKey, PROFILE_PROMPT, userMsg, { baseUrl: saved.baseUrl || undefined });
-        const reader = aiStream.getReader();
-        const decoder = new TextDecoder();
-        let fullText = '';
-        let chunkCount = 0;
+      const aiStream = await chatCompletionStream(provider, saved.apiKey, PROFILE_PROMPT, userMsg, { baseUrl: saved.baseUrl || undefined });
+      const reader = aiStream.getReader();
+      let fullText = '';
+      let chunkCount = 0;
 
-        const stream = new ReadableStream({
-          async pull(controller) {
-            const encoder = new TextEncoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ profile: fullText.trim() })}\n\n`));
-                controller.close();
-                return;
-              }
-              const text = typeof value === 'string' ? value : decoder.decode(value, { stream: true });
-              fullText += text;
-              chunkCount++;
-              controller.enqueue(
-                encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-              );
+      const stream = new ReadableStream({
+        async pull(controller) {
+          const encoder = new TextEncoder();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              console.log('[Profile] Stream done. Chunks:', chunkCount, 'Length:', fullText.length);
+              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ profile: fullText.trim() })}\n\n`));
+              controller.close();
+              return;
             }
-          },
-          cancel() {
-            reader.cancel();
-          },
-        });
+            fullText += String(value);
+            chunkCount++;
+            controller.enqueue(
+              encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
+            );
+          }
+        },
+        cancel() {
+          reader.cancel();
+        },
+      });
 
-        return new Response(stream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        });
-      } catch (streamErr) {
-        console.warn('[Profile] Stream failed, falling back:', streamErr);
-      }
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
     }
 
-    const profile = await chatCompletion(
-      provider,
-      saved.apiKey,
-      PROFILE_PROMPT,
-      userMsg,
-      { baseUrl: saved.baseUrl || undefined }
-    );
-
-    console.log('[Profile] 生成成功，长度:', profile.length);
-    return NextResponse.json({ ok: true, profile });
+    return NextResponse.json({ error: '请使用流式模式' }, { status: 400 });
   } catch (err) {
     console.error('[Profile] 生成失败:', err);
     if (err instanceof z.ZodError) {

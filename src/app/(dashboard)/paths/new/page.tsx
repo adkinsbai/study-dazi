@@ -163,23 +163,14 @@ export default function NewPathPage() {
         throw new Error(errData.error || '生成画像失败');
       }
 
-      // 检查是否是 SSE 响应
-      const contentType = res.headers.get('content-type') || '';
-      let profileText: string;
-      if (contentType.includes('text/event-stream')) {
-        const result = await consumeSSE(res, (chunks) => {
-          const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
-          setProfileProgress(pct);
-          setProfileProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
-        }) as { profile?: string };
-        profileText = result.profile || '';
-      } else {
-        const result = await res.json();
-        profileText = result.profile || '';
-      }
+      const result = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
+        setProfileProgress(pct);
+        setProfileProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+      }) as { profile?: string };
       setProfileProgress(100);
       setProfileProgressStatus('完成！');
-      setUserProfile(profileText);
+      setUserProfile(result.profile || '');
       setProfileData(data);
       // 根据问卷数据自动填充原有字段
       const levelMap: Record<string, '零基础' | '有基础' | '进阶'> = {
@@ -236,18 +227,11 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '生成失败');
       }
-      // 检查是否是 SSE 响应（流式初始化失败时会回退到普通 JSON）
-      const contentType = res.headers.get('content-type') || '';
-      let data: { phases?: Record<string, unknown>[] };
-      if (contentType.includes('text/event-stream')) {
-        data = await consumeSSE(res, (chunks) => {
-          const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
-          setProgress(pct);
-          setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
-        }) as { phases?: Record<string, unknown>[] };
-      } else {
-        data = await res.json();
-      }
+      const data = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 180 * 90));
+        setProgress(pct);
+        setProgressStatus(`AI 正在生成中... (${chunks} tokens)`);
+      }) as { phases?: Record<string, unknown>[] };
       // DeepSeek 可能返回数字 id，统一转字符串
       let phases: Phase[] = [];
       try {
@@ -304,16 +288,10 @@ export default function NewPathPage() {
         const data = await res.json();
         throw new Error(data.error || '展开失败');
       }
-      const nodeContentType = res.headers.get('content-type') || '';
-      let data: { nodes?: TreeNode[] };
-      if (nodeContentType.includes('text/event-stream')) {
-        data = await consumeSSE(res, (chunks) => {
-          const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
-          setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
-        }) as { nodes?: TreeNode[] };
-      } else {
-        data = await res.json();
-      }
+      const data = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 120 * 90));
+        setNodeProgressMap(prev => ({ ...prev, [phaseId]: { progress: pct, status: `AI 正在生成中... (${chunks} tokens)` } }));
+      }) as { nodes?: TreeNode[] };
       const nodes: TreeNode[] = data.nodes || [];
       // 写入缓存 + 设为可见
       setExpandedPhases((prev) => ({ ...prev, [phaseId]: nodes }));
@@ -373,6 +351,7 @@ export default function NewPathPage() {
               headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
+                'X-Stream': 'true',
               },
               body: JSON.stringify({
                 domain,
@@ -383,7 +362,7 @@ export default function NewPathPage() {
               }),
             });
             if (res.ok) {
-              const data = await res.json();
+              const data = await consumeSSE(res, () => {}) as { nodes?: TreeNode[] };
               allChildren[phase.id] = data.nodes || [];
             }
           } catch {
