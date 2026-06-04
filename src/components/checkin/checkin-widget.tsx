@@ -103,7 +103,7 @@ export function CheckInWidget() {
                 : 'bg-[#f97066] text-white hover:bg-[#e0524a]'
             }`}
           >
-            {todayDone ? '✅ 今日已打卡' : loading ? '⏳' : '📅 打卡'}
+            {todayDone ? '今日已打卡' : loading ? '...' : '打卡'}
           </button>
           <div>
             <p className="text-2xl font-bold text-gray-900">{streak}</p>

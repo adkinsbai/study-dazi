@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
+import { X, Check, Flame, Bookmark, Play, PartyPopper, RotateCcw, Clock, BookOpen, CheckCircle, Library, FileText, Lightbulb, MessageCircle } from 'lucide-react';
 import type { TreeNode, NodeStatus, ProgressMap } from './tree-renderer';
 
 interface NodeDrawerProps {
@@ -69,8 +70,8 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between z-10">
           <h2 className="text-base font-semibold text-gray-900 truncate pr-4">{node.title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg shrink-0">
-            ✕
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 shrink-0">
+            <X size={18} />
           </button>
         </div>
 
@@ -83,9 +84,9 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
                 : currentStatus === 'in_progress' ? 'bg-amber-100 text-amber-700'
                 : 'bg-gray-100 text-gray-600'
             }`}>
-              {currentStatus === 'completed' ? '✅ 已完成'
-                : currentStatus === 'in_progress' ? '🔥 进行中'
-                : '📌 未开始'}
+              {currentStatus === 'completed' ? <span className="inline-flex items-center gap-1"><Check size={12} /> 已完成</span>
+                : currentStatus === 'in_progress' ? <span className="inline-flex items-center gap-1"><Flame size={12} /> 进行中</span>
+                : <span className="inline-flex items-center gap-1"><Bookmark size={12} /> 未开始</span>}
             </span>
             {!readOnly && currentStatus === 'unlocked' && (
               <button
@@ -93,7 +94,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
                 disabled={saving}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
               >
-                🚀 开始学习
+                <span className="inline-flex items-center gap-1"><Play size={12} /> 开始学习</span>
               </button>
             )}
             {!readOnly && currentStatus === 'in_progress' && (
@@ -102,7 +103,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
                 disabled={saving}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
               >
-                🎉 标记完成
+                <span className="inline-flex items-center gap-1"><PartyPopper size={12} /> 标记完成</span>
               </button>
             )}
             {!readOnly && currentStatus === 'completed' && (
@@ -111,7 +112,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
                 disabled={saving}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                🔄 重新学习
+                <span className="inline-flex items-center gap-1"><RotateCcw size={12} /> 重新学习</span>
               </button>
             )}
             {saving && <span className="text-xs text-gray-400">保存中...</span>}
@@ -120,11 +121,11 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
 
           {/* Meta */}
           <div className="flex gap-4 text-sm text-gray-500">
-            <span>⏱ ~{node.estimated_hours}h</span>
+            <span className="inline-flex items-center gap-1"><Clock size={12} /> ~{node.estimated_hours}h</span>
             <span>
-              {node.node_type === 'required' ? '🔵 必修'
-                : node.node_type === 'optional' ? '🟡 可选'
-                : node.node_type === 'advanced' ? '🟣 进阶'
+              {node.node_type === 'required' ? '必修'
+                : node.node_type === 'optional' ? '可选'
+                : node.node_type === 'advanced' ? '进阶'
                 : node.is_required === false ? '可选' : '必修'}
             </span>
           </div>
@@ -132,7 +133,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
           {/* Description */}
           {node.description && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-1">📖 描述</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">描述</h3>
               <p className="text-sm text-gray-600">{node.description}</p>
             </div>
           )}
@@ -140,7 +141,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
           {/* Check criteria */}
           {node.check_criteria && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-1">✅ 检验标准</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">检验标准</h3>
               <p className="text-sm text-gray-600 bg-gray-50 rounded-md px-3 py-2">{node.check_criteria}</p>
             </div>
           )}
@@ -148,14 +149,14 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
           {/* Resources hint */}
           {node.resources_hint && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-1">📚 学习资源建议</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">学习资源建议</h3>
               <p className="text-sm text-gray-600">{node.resources_hint}</p>
             </div>
           )}
 
           {/* Notes */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-1">📝 我的笔记</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-1">我的笔记</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -175,7 +176,7 @@ export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChang
           {/* Why (for phases) */}
           {node.why && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-1">💡 为什么要学</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">为什么要学</h3>
               <p className="text-sm text-gray-500 italic">{node.why}</p>
             </div>
           )}
@@ -233,7 +234,7 @@ function CommentsSection({ pathId, nodeId }: { pathId: string; nodeId: string })
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-gray-700 mb-2">💬 留言 ({comments.length})</h3>
+      <h3 className="text-sm font-medium text-gray-700 mb-2">留言 ({comments.length})</h3>
       <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
         {comments.map(c => (
           <div key={c.id} className="text-sm">

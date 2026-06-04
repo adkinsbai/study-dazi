@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { X, Bell, Heart, MessageCircle, User, Users, Clock } from 'lucide-react';
 
 interface NotifItem { id: string; type: string; content: string; read: boolean; createdAt: string; referenceId: string | null; }
 
@@ -25,15 +26,15 @@ function getNotifLink(n: NotifItem): string | null {
   }
 }
 
-function getNotifIcon(type: string): string {
+function getNotifIcon(type: string) {
   switch (type) {
-    case 'friend_request': return '👤';
-    case 'buddy_invite': return '🤝';
-    case 'group_invite': return '👥';
-    case 'like': return '❤️';
-    case 'comment': return '💬';
-    case 'nudge': return '⏰';
-    default: return '🔔';
+    case 'friend_request': return <User size={14} />;
+    case 'buddy_invite': return <Users size={14} />;
+    case 'group_invite': return <Users size={14} />;
+    case 'like': return <Heart size={14} />;
+    case 'comment': return <MessageCircle size={14} />;
+    case 'nudge': return <Clock size={14} />;
+    default: return <Bell size={14} />;
   }
 }
 
@@ -100,14 +101,14 @@ export default function NotificationsPage() {
           </h1>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && <button onClick={markAll} className="px-3 py-1 rounded-full text-xs text-[#f97066] bg-[#fde8e6] hover:bg-[#f97066] hover:text-white transition-colors">全部已读</button>}
-            <Link href="/" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">✕</Link>
+            <Link href="/" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"><X size={16} /></Link>
           </div>
         </div>
       </header>
       <main className="max-w-2xl mx-auto px-4 py-6">
         {notifs.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-4xl mb-3">🔔</p>
+            <p className="text-4xl mb-3 text-gray-300"><Bell size={48} /></p>
             <p className="text-gray-400 text-sm">暂无通知</p>
           </div>
         ) : (

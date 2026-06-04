@@ -21,33 +21,33 @@ interface UserProfileFormProps {
 }
 
 const OCCUPATIONS = [
-  { id: 'student', label: '学生', icon: '🎓', desc: '上课/考试/毕设' },
-  { id: 'employee', label: '上班族', icon: '💼', desc: '提升/转行' },
-  { id: 'freelancer', label: '自由职业', icon: '🆓', desc: '学习新技能' },
-  { id: 'hobby', label: '兴趣爱好', icon: '💡', desc: '纯粹喜欢' },
+  { id: 'student', label: '学生', desc: '上课/考试/毕设' },
+  { id: 'employee', label: '上班族', desc: '提升/转行' },
+  { id: 'freelancer', label: '自由职业', desc: '学习新技能' },
+  { id: 'hobby', label: '兴趣爱好', desc: '纯粹喜欢' },
 ] as const;
 
 const LEVELS = [
-  { id: 'zero', label: '完全没接触过', icon: '🌱' },
-  { id: 'beginner', label: '看过一些，没怎么动手', icon: '📖' },
-  { id: 'intermediate', label: '做过一些小东西', icon: '✍️' },
-  { id: 'advanced', label: '有完整项目经验', icon: '🛠️' },
+  { id: 'zero', label: '完全没接触过' },
+  { id: 'beginner', label: '看过一些，没怎么动手' },
+  { id: 'intermediate', label: '做过一些小东西' },
+  { id: 'advanced', label: '有完整项目经验' },
 ] as const;
 
 const GOALS = [
-  { id: 'job', label: '能找工作', icon: '🎯', needDetail: true, detailPlaceholder: '目标公司/岗位？' },
-  { id: 'exam', label: '能应付考试/作业', icon: '📚', needDetail: true, detailPlaceholder: '什么时候考试？' },
-  { id: 'project', label: '能做出东西', icon: '🛠️', needDetail: true, detailPlaceholder: '想做什么类型的项目？' },
-  { id: 'improve', label: '能提升能力', icon: '📈', needDetail: true, detailPlaceholder: '具体想提升哪方面？' },
-  { id: 'understand', label: '了解原理就行', icon: '🔍', needDetail: false },
+  { id: 'job', label: '能找工作', needDetail: true, detailPlaceholder: '目标公司/岗位？' },
+  { id: 'exam', label: '能应付考试/作业', needDetail: true, detailPlaceholder: '什么时候考试？' },
+  { id: 'project', label: '能做出东西', needDetail: true, detailPlaceholder: '想做什么类型的项目？' },
+  { id: 'improve', label: '能提升能力', needDetail: true, detailPlaceholder: '具体想提升哪方面？' },
+  { id: 'understand', label: '了解原理就行', needDetail: false },
 ] as const;
 
 const LEARNING_STYLES = [
-  { id: 'video', label: '看视频', icon: '📹' },
-  { id: 'docs', label: '看文档/书', icon: '📝' },
-  { id: 'project', label: '做项目', icon: '🛠️' },
-  { id: 'theory', label: '先搞懂原理', icon: '📖' },
-  { id: 'mentor', label: '有人带/问人', icon: '🤝' },
+  { id: 'video', label: '看视频' },
+  { id: 'docs', label: '看文档/书' },
+  { id: 'project', label: '做项目' },
+  { id: 'theory', label: '先搞懂原理' },
+  { id: 'mentor', label: '有人带/问人' },
 ] as const;
 
 // 根据领域生成兴趣选项（示例）
@@ -133,7 +133,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              👋 嗨！聊聊你想学{domain}~
+              嗨! 聊聊你想学{domain}
             </h3>
             <p className="text-sm text-gray-500">先了解一下你的情况</p>
           </div>
@@ -151,7 +151,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{occ.icon}</div>
+                  <div className="text-2xl mb-1 font-bold text-[#f97066]">{occ.label.charAt(0)}</div>
                   <div className="font-medium text-gray-900">{occ.label}</div>
                   <div className="text-xs text-gray-500">{occ.desc}</div>
                 </button>
@@ -174,7 +174,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <span className="text-xl">{level.icon}</span>
+                  <span className="text-xl font-bold text-gray-400">{level.label.charAt(0)}</span>
                   <span className="font-medium text-gray-900">{level.label}</span>
                 </button>
               ))}
@@ -188,7 +188,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              🎯 学完之后，你最想做什么？
+              学完之后，你最想做什么?
             </h3>
             <p className="text-sm text-gray-500">这会帮助我们设计更有针对性的路径</p>
           </div>
@@ -206,7 +206,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                         : 'border-gray-100 hover:border-gray-200'
                     }`}
                   >
-                    <span className="text-xl">{goal.icon}</span>
+                    <span className="text-xl font-bold text-gray-400">{goal.label.charAt(0)}</span>
                     <span className="font-medium text-gray-900">{goal.label}</span>
                   </button>
                   {/* 追问详情 */}
@@ -293,7 +293,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <span>{style.icon}</span>
+                    <span className="font-bold text-gray-400">{style.label.charAt(0)}</span>
                     <span>{style.label}</span>
                   </button>
                 );

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'next/navigation';
+import { FileText, Heart, Search, X, MessageCircle, Paperclip, Map } from 'lucide-react';
 import Link from 'next/link';
 
 interface ExploreComment { id: string; content: string; createdAt: string; user: { username: string; avatarUrl: string | null }; }
@@ -137,19 +138,19 @@ export default function ExplorePage() {
       <div className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex">
           {[
-            { id: 'posts' as Tab, label: '动态', icon: '📝' },
-            { id: 'resources' as Tab, label: '资源', icon: '📎' },
-            { id: 'paths' as Tab, label: '路径', icon: '🗺️' },
+            { id: 'posts' as Tab, label: '动态' },
+            { id: 'resources' as Tab, label: '资源' },
+            { id: 'paths' as Tab, label: '路径' },
           ].map(t => (
             <button key={t.id} onClick={() => switchTab(t.id)}
               className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${tab === t.id ? 'border-[#f97066] text-[#f97066]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              <span className="text-xs">{t.icon}</span> {t.label}
+              {t.label}
             </button>
           ))}
           <div className="flex-1" />
           <button onClick={() => setShowLiked(!showLiked)}
             className={`px-3 py-3.5 text-sm transition-colors ${showLiked ? 'text-[#f97066]' : 'text-gray-400 hover:text-[#f97066]'}`}>
-            {showLiked ? '❤️' : '🤍'}
+            <Heart size={16} fill={showLiked ? 'currentColor' : 'none'} />
           </button>
         </div>
       </div>
@@ -178,7 +179,7 @@ export default function ExplorePage() {
               <div className="space-y-4">
                 {posts.filter(p => !showLiked || likedPostIds.has(p.id)).length === 0 && (
                   <div className="text-center py-16">
-                    <p className="text-4xl mb-3">📝</p>
+                    <p className="text-4xl mb-3 text-gray-300"><FileText size={48} /></p>
                     <p className="text-gray-400 text-sm">暂无动态</p>
                   </div>
                 )}
@@ -198,7 +199,7 @@ export default function ExplorePage() {
                       <div className="flex items-center gap-1">
                         <button onClick={() => toggleLike(p.id, undefined)}
                           className={`p-1.5 rounded-full transition-colors ${likedPostIds.has(p.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
-                          {likedPostIds.has(p.id) ? '❤️' : '🤍'}
+                          <Heart size={14} fill={likedPostIds.has(p.id) ? '#f97066' : 'none'} className={likedPostIds.has(p.id) ? 'text-[#f97066]' : 'text-gray-400'} />
                         </button>
                         {(p.likeCount ?? 0) > 0 && <span className="text-xs text-gray-400">{p.likeCount}</span>}
                       </div>
@@ -239,7 +240,7 @@ export default function ExplorePage() {
                     <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('resources', domain)}
                       placeholder="搜索资源..." className="w-full border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6] transition-colors bg-white" />
                   </div>
-                  <button onClick={() => loadTab('resources', domain)} className="p-2.5 rounded-full bg-[#f97066] text-white hover:bg-[#e0524a] transition-colors">🔍</button>
+                  <button onClick={() => loadTab('resources', domain)} className="p-2.5 rounded-full bg-[#f97066] text-white hover:bg-[#e0524a] transition-colors"><Search size={16} /></button>
                   <button onClick={() => { setShowResourceForm(!showResourceForm); setResError(''); }}
                     className="px-4 py-2.5 rounded-full bg-white border border-[#f97066] text-[#f97066] text-sm font-medium hover:bg-[#fef4f3] transition-colors">
                     + 分享资源
@@ -277,7 +278,7 @@ export default function ExplorePage() {
 
                 {resources.filter(r => !showLiked || likedResourceIds.has(r.id)).length === 0 && (
                   <div className="text-center py-16">
-                    <p className="text-4xl mb-3">📎</p>
+                    <p className="text-4xl mb-3 text-gray-300"><Paperclip size={48} /></p>
                     <p className="text-gray-400 text-sm">暂无资源</p>
                   </div>
                 )}
@@ -285,7 +286,7 @@ export default function ExplorePage() {
                   <article key={r.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                     <div className="p-5">
                       <div className="flex items-start gap-3">
-                        <span className="w-10 h-10 rounded-xl bg-[#fde8e6] text-[#f97066] flex items-center justify-center text-sm shrink-0">📎</span>
+                        <span className="w-10 h-10 rounded-xl bg-[#fde8e6] text-[#f97066] flex items-center justify-center shrink-0"><Paperclip size={16} /></span>
                         <div className="flex-1 min-w-0">
                           {r.url ? (
                             <a href={r.url} target="_blank" rel="noopener" className="text-sm font-semibold text-[#6366f1] hover:text-[#4f46e5] underline underline-offset-2 decoration-[#6366f1]/30 hover:decoration-[#6366f1] transition-colors">{r.title}</a>
@@ -304,7 +305,7 @@ export default function ExplorePage() {
                         <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => toggleLike(undefined, r.id)}
                             className={`p-1.5 rounded-full transition-colors ${likedResourceIds.has(r.id) ? 'text-[#f97066] bg-[#fde8e6] heart-pop' : 'text-gray-300 hover:text-[#f97066] hover:bg-[#fef4f3]'}`}>
-                            {likedResourceIds.has(r.id) ? '❤️' : '🤍'}
+                            <Heart size={14} fill={likedResourceIds.has(r.id) ? '#f97066' : 'none'} className={likedResourceIds.has(r.id) ? 'text-[#f97066]' : 'text-gray-400'} />
                           </button>
                           {(r.likeCount ?? 0) > 0 && <span className="text-xs text-gray-400">{r.likeCount}</span>}
                         </div>
@@ -326,14 +327,14 @@ export default function ExplorePage() {
                     <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && loadTab('paths', domain)}
                       placeholder="搜索路径模板..." className="w-full border border-gray-200 rounded-full px-4 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#fde8e6] transition-colors bg-white" />
                   </div>
-                  <button onClick={() => loadTab('paths', domain)} className="p-2.5 rounded-full bg-[#f97066] text-white hover:bg-[#e0524a] transition-colors">🔍</button>
+                  <button onClick={() => loadTab('paths', domain)} className="p-2.5 rounded-full bg-[#f97066] text-white hover:bg-[#e0524a] transition-colors"><Search size={16} /></button>
                   {(search || domain) && (
-                    <button onClick={() => { setSearch(''); setDomain(''); loadTab('paths', ''); }} className="p-2.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">✕</button>
+                    <button onClick={() => { setSearch(''); setDomain(''); loadTab('paths', ''); }} className="p-2.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"><X size={16} /></button>
                   )}
                 </div>
                 {paths.length === 0 && (
                   <div className="text-center py-16">
-                    <p className="text-4xl mb-3">🗺️</p>
+                    <p className="text-4xl mb-3 text-gray-300"><Map size={48} /></p>
                     <p className="text-gray-400 text-sm">{search || domain ? '没有匹配的路径模板，试试其他关键词' : '暂无路径模板'}</p>
                   </div>
                 )}
@@ -342,13 +343,13 @@ export default function ExplorePage() {
                     <article key={t.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                       <div className="p-5">
                         <Link href={`/paths/${t.id}`} className="flex items-start gap-3 mb-3 cursor-pointer">
-                          <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] text-white flex items-center justify-center text-sm shrink-0">🗺️</span>
+                          <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f97066] to-[#e0524a] text-white flex items-center justify-center shrink-0"><Map size={16} /></span>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#f97066] transition-colors">{t.title}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs bg-[#fde8e6] text-[#e0524a] px-2 py-0.5 rounded-full">{t.domain}</span>
                               <span className="text-xs text-gray-400">Fork {t.forkCount}</span>
-                              {(t.commentCount ?? 0) > 0 && <span className="text-xs text-gray-400">💬 {t.commentCount}</span>}
+                              {(t.commentCount ?? 0) > 0 && <span className="text-xs text-gray-400"><MessageCircle size={12} className="inline mr-0.5" />{t.commentCount}</span>}
                             </div>
                           </div>
                         </Link>
@@ -416,7 +417,7 @@ function InlineComments({ targetId, type, commentCount: initialCount, topComment
       )}
       <button onClick={() => { setShow(!show); if (!show) load(); }}
         className="text-xs text-gray-400 hover:text-[#f97066] transition-colors flex items-center gap-1.5">
-        <span>💬</span> {count > 0 ? `${count} 条评论` : '评论'}
+        <span><MessageCircle size={14} /></span> {count > 0 ? `${count} 条评论` : '评论'}
       </button>
       {show && (
         <div className="mt-3 space-y-2.5">

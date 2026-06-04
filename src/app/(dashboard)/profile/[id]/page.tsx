@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
+import { Users, MessageCircle, Check } from 'lucide-react';
 import Link from 'next/link';
 
 interface UserInfo { id: string; username: string; avatarUrl: string | null; bio: string | null; }
@@ -97,8 +98,8 @@ export default function FriendProfilePage() {
               {user.bio && <p className="text-sm text-gray-500 mt-0.5">{user.bio}</p>}
             </div>
             <div className="flex gap-2 shrink-0">
-              <button onClick={openBuddy} className="text-xs px-2 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100">🤝 邀请搭子</button>
-              <Link href={`/messages?with=${user.id}`} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
+              <button onClick={openBuddy} className="text-xs px-2 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100"><Users size={12} className="inline mr-1" />邀请搭子</button>
+              <Link href={`/messages?with=${user.id}`} className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]"><MessageCircle size={12} className="inline mr-1" />私信</Link>
             </div>
           </div>
         </div>
@@ -109,7 +110,7 @@ export default function FriendProfilePage() {
             <div className="bg-white rounded-2xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
               <h3 className="font-semibold text-sm">邀请 {user.username} 成为搭子</h3>
               {buddyError && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{buddyError}</p>}
-              {buddySuccess && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
+              {buddySuccess && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded"><Check size={12} className="inline mr-1" />邀请已发送</p>}
               <input value={buddyDomain} onChange={e => setBuddyDomain(e.target.value)} placeholder="学习领域 *" className="w-full border rounded-md px-3 py-2 text-sm" />
               <select value={buddyPathId} onChange={e => setBuddyPathId(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm">
                 <option value="">选择共享路径（可选）</option>

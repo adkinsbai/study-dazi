@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
+import { MessageCircle, Users, Check } from 'lucide-react';
 import Link from 'next/link';
 
 interface UserInfo { id: string; username: string; avatarUrl: string | null; }
@@ -111,7 +112,7 @@ export default function FriendsPage() {
                   <span className="text-sm font-medium flex-1">{u.username}</span>
                   <button onClick={() => handleAdd(u.id)}
                     className="text-xs text-[#f97066] hover:text-[#e0524a]">+ 添加</button>
-                  <Link href={`/messages?with=${u.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
+                  <Link href={`/messages?with=${u.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]"><MessageCircle size={12} /> 私信</Link>
                 </div>
               ))}
             </div>
@@ -156,7 +157,7 @@ export default function FriendsPage() {
                     <span className="text-sm font-medium">{f.username}</span>
                   </Link>
                   <BuddyInviteBtn friendId={f.id} />
-                  <Link href={`/messages?with=${f.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]">💬 私信</Link>
+                  <Link href={`/messages?with=${f.id}`} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 hover:bg-[#fef4f3] hover:text-[#f97066]"><MessageCircle size={12} /> 私信</Link>
                 </div>
               ))}
             </div>
@@ -206,13 +207,13 @@ function BuddyInviteBtn({ friendId }: { friendId: string }) {
 
   return (
     <>
-      <button onClick={open} className="text-xs text-purple-500 hover:text-purple-700">🤝 搭子</button>
+      <button onClick={open} className="text-xs text-purple-500 hover:text-purple-700"><Users size={12} /> 搭子</button>
       {show && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShow(false)}>
           <div className="bg-white rounded-2xl p-5 max-w-xs mx-4 w-full space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-sm">邀请成为搭子</h3>
             {error && <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{error}</p>}
-            {success && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">✅ 邀请已发送</p>}
+            {success && <p className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded"><Check size={14} /> 邀请已发送</p>}
             <input value={domain} onChange={e => setDomain(e.target.value)} placeholder="学习领域 *" className="w-full border rounded-md px-3 py-2 text-sm" />
             <select value={pathId} onChange={e => setPathId(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm">
               <option value="">选择共享路径（可选）</option>
@@ -258,7 +259,7 @@ function BuddySection() {
 
       {buddies.map(b => (
         <div key={b.id} className="flex items-center gap-2 text-sm">
-          <span>🤝 {b.buddy.username}</span>
+          <span><Users size={14} /> {b.buddy.username}</span>
           <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded">{b.domain}</span>
         </div>
       ))}

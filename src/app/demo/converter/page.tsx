@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { FileText, Loader2, AlertCircle } from 'lucide-react';
 
 type FileFormat = 'pdf' | 'docx' | 'pptx' | 'html' | 'unknown';
 
@@ -217,7 +218,7 @@ export default function ConverterDemo() {
             onChange={handleChange}
             className="hidden"
           />
-          <div className="text-4xl mb-3">📄</div>
+          <div className="text-4xl mb-3 text-gray-300"><FileText size={48} /></div>
           <p className="text-gray-600 font-medium">拖拽文件到这里，或点击选择</p>
           <p className="text-gray-400 text-sm mt-1">PDF / DOCX / PPTX / HTML</p>
         </div>
@@ -225,12 +226,12 @@ export default function ConverterDemo() {
         {/* 状态 */}
         {loading && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-700">
-            ⏳ 正在转换 {fileName}...
+            <Loader2 size={14} className="inline animate-spin mr-1" /> 正在转换 {fileName}...
           </div>
         )}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            ⚠️ {error}
+            <AlertCircle size={14} className="inline mr-1" /> {error}
           </div>
         )}
 

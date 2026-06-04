@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
+import { Check, X } from 'lucide-react';
 
 const PROVIDERS: { id: string; name: string; url: string; placeholder: string; customizableUrl?: boolean }[] = [
   { id: 'deepseek', name: 'DeepSeek', url: 'https://platform.deepseek.com', placeholder: 'sk-...' },
@@ -241,7 +242,7 @@ export default function SettingsPage() {
             )}
             {testResult && (
               <div className={`text-sm px-3 py-2 rounded-xl ${testResult.ok ? 'text-[#10b981] bg-green-50' : 'text-[#ef4444] bg-red-50'}`}>
-                {testResult.ok ? '✅ ' : '❌ '}{testResult.msg}
+                {testResult.ok ? <Check size={14} className="inline mr-1 text-emerald-500" /> : <X size={14} className="inline mr-1 text-red-500" />}{testResult.msg}
               </div>
             )}
 

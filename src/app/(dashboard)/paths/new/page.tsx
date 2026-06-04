@@ -7,6 +7,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import UserProfileForm, { UserProfileData } from '@/components/path/user-profile-form';
 import UserProfileViewer from '@/components/path/user-profile-viewer';
 import { convertFileToMarkdown, detectFormat } from '@/lib/file-converter';
+import { AlertCircle, X, Loader2, FileUp, Check, Sparkles, Save, ArrowLeft, CheckCircle } from 'lucide-react';
 
 const PROVIDERS = [
   { id: 'deepseek', name: 'DeepSeek' },
@@ -472,7 +473,7 @@ export default function NewPathPage() {
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <span className="text-red-500 text-lg shrink-0">⚠️</span>
+            <span className="text-red-500 shrink-0"><AlertCircle size={18} /></span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-red-800">生成失败</p>
               <p className="text-sm text-red-600 mt-0.5 break-words">{error}</p>
@@ -481,7 +482,7 @@ export default function NewPathPage() {
               onClick={() => setError('')}
               className="text-red-400 hover:text-red-600 text-sm shrink-0"
             >
-              ✕
+              <X size={14} />
             </button>
           </div>
         )}
@@ -521,7 +522,7 @@ export default function NewPathPage() {
                 </div>
                 {!configuredProviders.includes(provider) && (
                   <p className="text-xs text-amber-500 mt-1">
-                    ⚠️ 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置
+                    <span className="inline-flex items-center gap-1"><AlertCircle size={12} /> 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置</span>
                   </p>
                 )}
               </div>
@@ -600,7 +601,7 @@ export default function NewPathPage() {
               </div>
               {!configuredProviders.includes(provider) && (
                 <p className="text-xs text-amber-500 mt-1">
-                  ⚠️ 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置
+                  <span className="inline-flex items-center gap-1"><AlertCircle size={12} /> 该模型未配置 API Key，请先去<a href="/settings" className="underline ml-1">设置</a>页面配置</span>
                 </p>
               )}
             </div>
@@ -686,9 +687,9 @@ export default function NewPathPage() {
                   className="hidden"
                 />
                 {materialsLoading ? (
-                  <p className="text-sm text-blue-500">⏳ 正在转换...</p>
+                  <p className="text-sm text-blue-500"><Loader2 size={14} className="inline animate-spin mr-1" /> 正在转换...</p>
                 ) : (
-                  <p className="text-sm text-gray-400">📄 点击或拖拽上传 PDF / DOCX / PPTX / HTML</p>
+                  <p className="text-sm text-gray-400"><FileUp size={14} className="inline mr-1" /> 点击或拖拽上传 PDF / DOCX / PPTX / HTML</p>
                 )}
               </div>
               {materialsError && (
@@ -699,13 +700,13 @@ export default function NewPathPage() {
                   {materials.map((m, i) => (
                     <div key={i} className="flex items-center justify-between bg-green-50 rounded px-3 py-1.5 text-sm">
                       <span className="text-green-700 truncate flex-1">
-                        ✅ {m.name} <span className="text-green-400">({m.markdown.length} 字)</span>
+                        <Check size={12} className="inline mr-1" /> {m.name} <span className="text-green-400">({m.markdown.length} 字)</span>
                       </span>
                       <button
                         onClick={() => removeMaterial(i)}
                         className="text-gray-400 hover:text-red-500 ml-2 shrink-0"
                       >
-                        ✕
+                        <X size={12} />
                       </button>
                     </div>
                   ))}
@@ -724,7 +725,7 @@ export default function NewPathPage() {
               disabled={!domain.trim() || loading}
               className="w-full rounded-md bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50"
             >
-              {loading ? '⏳ AI 正在生成学习路径...' : '✨ 生成学习框架'}
+              {loading ? <span className="inline-flex items-center gap-1"><Loader2 size={14} className="animate-spin" /> AI 正在生成学习路径...</span> : <span className="inline-flex items-center gap-1"><Sparkles size={14} /> 生成学习框架</span>}
             </button>
           </div>
         )}
@@ -786,7 +787,7 @@ export default function NewPathPage() {
                               <span className="text-gray-400">~{node.estimated_hours}h</span>
                             </div>
                             <p className={`mt-0.5 ${isSelected ? 'text-gray-500' : 'text-gray-400'}`}>{node.description}</p>
-                            <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-400' : 'text-gray-300'}`}>✅ {node.check_criteria}</p>
+                            <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-400' : 'text-gray-300'}`}><CheckCircle size={10} className="inline mr-0.5" />{node.check_criteria}</p>
                           </div>
                         );
                       })}
@@ -808,7 +809,7 @@ export default function NewPathPage() {
                       className="mt-3 text-sm text-[#f97066] hover:text-[#e0524a] font-medium disabled:opacity-50"
                     >
                       {expandingPhases.has(phase.id)
-                        ? '⏳ AI 正在生成子节点...'
+                        ? <span className="inline-flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> AI 正在生成子节点...</span>
                         : '+ 展开子节点'}
                     </button>
                   ) : (
@@ -847,14 +848,14 @@ export default function NewPathPage() {
                 disabled={loading}
                 className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                ← 返回
+                <span className="inline-flex items-center gap-1"><ArrowLeft size={14} /> 返回</span>
               </button>
               <button
                 onClick={handleSave}
                 disabled={loading}
                 className="flex-1 rounded-md bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50"
               >
-                {loading ? '⏳ 正在生成并保存...' : '💾 保存路径'}
+                {loading ? <span className="inline-flex items-center gap-1"><Loader2 size={14} className="animate-spin" /> 正在生成并保存...</span> : <span className="inline-flex items-center gap-1"><Save size={14} /> 保存路径</span>}
               </button>
             </div>
           </div>

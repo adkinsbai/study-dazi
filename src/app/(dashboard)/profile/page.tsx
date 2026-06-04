@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
+import { Check, X, FileText, Trash2, Paperclip, Users, Edit3 } from 'lucide-react';
 
 type Tab = 'posts' | 'resources' | 'paths';
 
@@ -163,7 +164,7 @@ export default function ProfilePage() {
             </div>
             <button onClick={() => { setEditName(profile?.username||''); setEditAvatar(profile?.avatarUrl||''); setEditBio(profile?.bio||''); setShowEdit(true); }}
               className="text-sm text-indigo-600 hover:text-indigo-500 shrink-0">编辑资料</button>
-            {profileSaved && <span className="text-xs text-emerald-600 ml-2">✅ 已保存</span>}
+            {profileSaved && <span className="text-xs text-emerald-600 ml-2"><Check size={12} className="inline mr-0.5" />已保存</span>}
           </div>
         </div>
 
@@ -191,23 +192,23 @@ export default function ProfilePage() {
                         <div key={i} className="relative w-16 h-16 rounded overflow-hidden">
                           <img src={url} className="w-full h-full object-cover" />
                           <button onClick={() => setNewImages(prev => prev.filter((_, j) => j !== i))}
-                            className="absolute top-0 right-0 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✕</button>
+                            className="absolute top-0 right-0 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center"><X size={10} /></button>
                         </div>
                       ))}
                     </div>
                   )}
-                  {newMarkdownName && <p className="text-xs text-gray-500">📄 {newMarkdownName} <button onClick={() => { setNewMarkdown(''); setNewMarkdownName(''); }} className="text-red-400">移除</button></p>}
+                  {newMarkdownName && <p className="text-xs text-gray-500"><FileText size={12} className="inline mr-1" />{newMarkdownName} <button onClick={() => { setNewMarkdown(''); setNewMarkdownName(''); }} className="text-red-400">移除</button></p>}
                   {postError && <p className="text-xs text-red-600">{postError}</p>}
                   <div className="flex items-center gap-2">
                     <input ref={imgInputRef} type="file" accept="image/*" multiple onChange={e => { const files = e.target.files; if (files) Array.from(files).slice(0, 4).forEach(f => handleFileUpload(f)); if (imgInputRef.current) imgInputRef.current.value = ''; }} className="hidden" />
                     <button onClick={() => imgInputRef.current?.click()} disabled={uploading} className="text-xs text-gray-500">🖼️ 图片</button>
                     <input ref={mdInputRef} type="file" accept=".md" onChange={async e => { const f = e.target.files?.[0]; if (!f) return; setUploading(true); const form = new FormData(); form.append('file', f); const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }); if (res.ok) { const d = await res.json(); if (d.content) { setNewMarkdown(d.content); setNewMarkdownName(d.name); } } setUploading(false); if (mdInputRef.current) mdInputRef.current.value = ''; }} className="hidden" />
-                    <button onClick={() => mdInputRef.current?.click()} className="text-xs text-gray-500">📄 md</button>
+                    <button onClick={() => mdInputRef.current?.click()} className="text-xs text-gray-500"><FileText size={12} className="inline mr-0.5" />md</button>
                     <select value={newVisibility} onChange={e => setNewVisibility(e.target.value)}
                       className="text-xs border rounded px-1 py-0.5 text-gray-500">
                       <option value="public">🌐 公开</option>
                       <option value="friends">👥 好友</option>
-                      <option value="buddies">🤝 搭子</option>
+                      <option value="buddies">搭子</option>
                     </select>
                     <div className="flex-1" />
                     <button onClick={handlePost} disabled={(!newContent.trim() && !newMarkdown) || posting}
@@ -220,9 +221,9 @@ export default function ProfilePage() {
                       <span className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString('zh-CN')}</span>
                       <div className="flex gap-1">
                         <button onClick={() => openEdit({ id: p.id, type: 'post', content: p.content })}
-                          className="text-xs text-gray-400 hover:text-indigo-600">✏️</button>
+                          className="text-xs text-gray-400 hover:text-indigo-600"><Edit3 size={12} /></button>
                         <button onClick={() => { if (confirm('删除？')) { fetch(`/api/posts?id=${p.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(() => setPosts(prev => prev.filter(x => x.id !== p.id))); } }}
-                          className="text-xs text-gray-400 hover:text-red-500">🗑️</button>
+                          className="text-xs text-gray-400 hover:text-red-500"><Trash2 size={12} /></button>
                       </div>
                     </div>
                     <p className="text-sm whitespace-pre-wrap">{p.content}</p>
@@ -245,9 +246,9 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <button onClick={() => openEdit({ id: r.id, type: 'resource', title: r.title, url: r.url || '', domain: r.domain, notes: r.notes || '' })}
-                          className="text-xs text-gray-400 hover:text-indigo-600">✏️</button>
+                          className="text-xs text-gray-400 hover:text-indigo-600"><Edit3 size={12} /></button>
                         <button onClick={() => { if (confirm('删除？')) { fetch(`/api/resources?id=${r.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(() => setResources(prev => prev.filter(x => x.id !== r.id))); } }}
-                          className="text-xs text-gray-400 hover:text-red-500">🗑️</button>
+                          className="text-xs text-gray-400 hover:text-red-500"><Trash2 size={12} /></button>
                       </div>
                     </div>
                     {r.notes && <p className="text-xs text-gray-500 mt-1">{r.notes.substring(0, 150)}</p>}
@@ -266,9 +267,9 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {p.isTemplate && <span className="text-[10px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">已分享</span>}
                       <button onClick={() => openEdit({ id: p.id, type: 'path', title: p.title })}
-                        className="text-xs text-gray-400 hover:text-indigo-600">✏️</button>
+                        className="text-xs text-gray-400 hover:text-indigo-600"><Edit3 size={12} /></button>
                       <button onClick={() => { if (confirm('删除？')) { fetch(`/api/paths/${p.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(() => setPaths(prev => prev.filter(x => x.id !== p.id))); } }}
-                        className="text-xs text-gray-400 hover:text-red-500">🗑️</button>
+                        className="text-xs text-gray-400 hover:text-red-500"><Trash2 size={12} /></button>
                     </div>
                   </div>
                 ))}
@@ -287,7 +288,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2">
               <input type="text" value={editAvatar} onChange={e => setEditAvatar(e.target.value)} placeholder="头像 URL" className="flex-1 border rounded-md px-3 py-2 text-sm" />
               <label className="px-3 py-2 border rounded-md text-sm text-gray-500 hover:text-indigo-600 cursor-pointer">
-                📎 本地上传
+                <Paperclip size={12} className="inline mr-1" />本地上传
                 <input type="file" accept="image/*" className="hidden" onChange={async e => {
                   const f = e.target.files?.[0]; if (!f) return;
                   const form = new FormData(); form.append('file', f);

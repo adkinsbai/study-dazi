@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { X, MessageCircle, Hand } from 'lucide-react';
 
 interface Conv { user: { id: string; username: string; avatarUrl: string | null }; lastMsg: string; time: string; unread: number; }
 interface Msg { id: string; content: string; createdAt: string; fromUser: { username: string }; fromUserId: string; }
@@ -70,7 +71,7 @@ function MessagesPageInner() {
             <span className="w-1 h-5 rounded-full bg-[#f97066]"></span>
             消息
           </h1>
-          <Link href="/" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">✕</Link>
+          <Link href="/" className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"><X size={16} /></Link>
         </div>
       </header>
 
@@ -105,7 +106,7 @@ function MessagesPageInner() {
             ))}
             {convs.length === 0 && (
               <div className="p-8 text-center">
-                <p className="text-3xl mb-2">💬</p>
+                <p className="text-3xl mb-2"><MessageCircle size={32} /></p>
                 <p className="text-gray-400 text-sm">暂无会话</p>
                 <p className="text-gray-300 text-xs mt-1">从好友列表或主页搭子空间发起私信</p>
               </div>
@@ -130,7 +131,7 @@ function MessagesPageInner() {
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {msgs.length === 0 && (
                   <div className="text-center py-12">
-                    <p className="text-3xl mb-2">👋</p>
+                    <p className="text-3xl mb-2"><Hand size={32} /></p>
                     <p className="text-gray-400 text-sm">暂无消息，发送第一条打个招呼吧</p>
                   </div>
                 )}
@@ -164,7 +165,7 @@ function MessagesPageInner() {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <p className="text-5xl mb-4">💬</p>
+                <p className="text-5xl mb-4"><MessageCircle size={48} /></p>
                 <p className="text-gray-400 text-sm">选择一个会话开始聊天</p>
                 <p className="text-gray-300 text-xs mt-1">或从好友页面发起新对话</p>
               </div>
