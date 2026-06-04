@@ -1,6 +1,38 @@
 'use client';
 
 import { useState } from 'react';
+import { GraduationCap, Briefcase, Compass, Lightbulb, Sprout, BookOpen, PenTool, Wrench, Target, Library, Hammer, TrendingUp, Search, Video, FileText, Beaker, Hand } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+const OCCUPATION_ICONS: Record<string, LucideIcon> = {
+  student: GraduationCap,
+  employee: Briefcase,
+  freelancer: Compass,
+  hobby: Lightbulb,
+};
+
+const LEVEL_ICONS: Record<string, LucideIcon> = {
+  zero: Sprout,
+  beginner: BookOpen,
+  intermediate: PenTool,
+  advanced: Wrench,
+};
+
+const GOAL_ICONS: Record<string, LucideIcon> = {
+  job: Target,
+  exam: Library,
+  project: Hammer,
+  improve: TrendingUp,
+  understand: Search,
+};
+
+const STYLE_ICONS: Record<string, LucideIcon> = {
+  video: Video,
+  docs: FileText,
+  project: Hammer,
+  theory: Beaker,
+  mentor: Hand,
+};
 
 export interface UserProfileData {
   occupation: 'student' | 'employee' | 'freelancer' | 'hobby';
@@ -151,7 +183,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <div className="text-2xl mb-1 font-bold text-[#f97066]">{occ.label.charAt(0)}</div>
+                  <div className="text-2xl mb-1 text-[#f97066]">{(() => { const Icon = OCCUPATION_ICONS[occ.id]; return Icon ? <Icon size={28} /> : null; })()}</div>
                   <div className="font-medium text-gray-900">{occ.label}</div>
                   <div className="text-xs text-gray-500">{occ.desc}</div>
                 </button>
@@ -174,7 +206,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <span className="text-xl font-bold text-gray-400">{level.label.charAt(0)}</span>
+                  <span className="text-xl text-gray-400">{(() => { const Icon = LEVEL_ICONS[level.id]; return Icon ? <Icon size={20} /> : null; })()}</span>
                   <span className="font-medium text-gray-900">{level.label}</span>
                 </button>
               ))}
@@ -206,7 +238,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                         : 'border-gray-100 hover:border-gray-200'
                     }`}
                   >
-                    <span className="text-xl font-bold text-gray-400">{goal.label.charAt(0)}</span>
+                    <span className="text-xl text-gray-400">{(() => { const Icon = GOAL_ICONS[goal.id]; return Icon ? <Icon size={20} /> : null; })()}</span>
                     <span className="font-medium text-gray-900">{goal.label}</span>
                   </button>
                   {/* 追问详情 */}
@@ -293,7 +325,7 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <span className="font-bold text-gray-400">{style.label.charAt(0)}</span>
+                    <span className="text-gray-400">{(() => { const Icon = STYLE_ICONS[style.id]; return Icon ? <Icon size={16} /> : null; })()}</span>
                     <span>{style.label}</span>
                   </button>
                 );
