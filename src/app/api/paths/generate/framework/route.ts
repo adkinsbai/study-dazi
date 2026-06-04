@@ -17,8 +17,6 @@ const BodySchema = z.object({
   materials: z.string().optional(),
 });
 
-const STOP = ['\n\n'];
-
 export async function POST(req: NextRequest) {
   try {
     const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
     // 如果有上传的学习资料，追加到用户消息中
     if (body.materials) {
       userMsg += `\n\n以下是我的学习资料，请参考这些内容来设计学习路径：\n\n${body.materials}`;
-      maxTokens += 500; // 资料可能较长，适当增加输出空间
+      maxTokens = 3500; // 资料较长，需要更多输出空间
     }
 
     const wantStream = req.headers.get('X-Stream') === 'true';
@@ -88,7 +86,7 @@ export async function POST(req: NextRequest) {
             let fullText = '';
             let chunkCount = 0;
 
-            const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens: currentMaxTokens, baseUrl, stop: STOP });
+            const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens: currentMaxTokens, baseUrl });
             const reader = aiStream.getReader();
 
             try {

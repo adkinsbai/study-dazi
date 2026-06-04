@@ -15,8 +15,6 @@ const BodySchema = z.object({
   provider: z.string().optional(),
 });
 
-const STOP = ['\n\n'];
-
 export async function POST(req: NextRequest) {
   try {
     const auth = req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -65,7 +63,7 @@ export async function POST(req: NextRequest) {
             let fullText = '';
             let chunkCount = 0;
 
-            const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: currentMaxTokens, baseUrl, stop: STOP });
+            const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: currentMaxTokens, baseUrl });
             const reader = aiStream.getReader();
 
             try {
