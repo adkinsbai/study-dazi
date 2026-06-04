@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import UserProfileForm, { UserProfileData } from '@/components/path/user-profile-form';
 import UserProfileViewer from '@/components/path/user-profile-viewer';
+import { convertFileToMarkdown, detectFormat } from '@/lib/file-converter';
 
 const PROVIDERS = [
   { id: 'deepseek', name: 'DeepSeek' },
@@ -87,6 +88,12 @@ export default function NewPathPage() {
   // 用户选择的子节点：{ phaseId: Set<nodeId> }
   const [selectedNodes, setSelectedNodes] = useState<Record<string, Set<string>>>({});
 
+  // 上传的学习资料
+  const [materials, setMaterials] = useState<{ name: string; markdown: string }[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [materialsError, setMaterialsError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // 进度条状态
   const [progress, setProgress] = useState(0);
   const [progressStatus, setProgressStatus] = useState('');
@@ -126,6 +133,37 @@ export default function NewPathPage() {
       }
     }
     throw new Error('AI 响应中断');
+  }, []);
+
+  // 处理文件上传转换
+  const handleFiles = useCallback(async (files: FileList) => {
+    setMaterialsError('');
+    setMaterialsLoading(true);
+    const newMaterials: { name: string; markdown: string }[] = [];
+    for (const file of Array.from(files)) {
+      if (!detectFormat(file.name)) {
+        setMaterialsError(`不支持: ${file.name}（支持 PDF/DOCX/PPTX/HTML）`);
+        continue;
+      }
+      try {
+        const result = await convertFileToMarkdown(file);
+        if (result.markdown.trim()) {
+          newMaterials.push(result);
+        } else {
+          setMaterialsError(`${file.name}: 未提取到内容`);
+        }
+      } catch (err) {
+        setMaterialsError(`${file.name}: ${err instanceof Error ? err.message : '转换失败'}`);
+      }
+    }
+    if (newMaterials.length > 0) {
+      setMaterials(prev => [...prev, ...newMaterials]);
+    }
+    setMaterialsLoading(false);
+  }, []);
+
+  const removeMaterial = useCallback((index: number) => {
+    setMaterials(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   if (!user) {
@@ -224,6 +262,9 @@ export default function NewPathPage() {
           hours_per_week: hoursPerWeek ? parseInt(hoursPerWeek) : undefined,
           provider,
           userProfile: userProfile || undefined,
+          materials: materials.length > 0
+            ? materials.map(m => `【${m.name}】\n${m.markdown}`).join('\n\n---\n\n')
+            : undefined,
         }),
       });
       if (!res.ok) {
@@ -614,6 +655,62 @@ export default function NewPathPage() {
                 placeholder="如：15"
                 className="mt-1 block w-32 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
+            </div>
+
+            {/* 上传学习资料（可选） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                学习资料（可选）
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                上传课程大纲、教材目录等，AI 会参考这些内容生成更精准的路径
+              </p>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+                }}
+                className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.pptx,.html,.htm"
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files?.length) handleFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                  className="hidden"
+                />
+                {materialsLoading ? (
+                  <p className="text-sm text-blue-500">⏳ 正在转换...</p>
+                ) : (
+                  <p className="text-sm text-gray-400">📄 点击或拖拽上传 PDF / DOCX / PPTX / HTML</p>
+                )}
+              </div>
+              {materialsError && (
+                <p className="text-xs text-red-500 mt-1">{materialsError}</p>
+              )}
+              {materials.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {materials.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between bg-green-50 rounded px-3 py-1.5 text-sm">
+                      <span className="text-green-700 truncate flex-1">
+                        ✅ {m.name} <span className="text-green-400">({m.markdown.length} 字)</span>
+                      </span>
+                      <button
+                        onClick={() => removeMaterial(i)}
+                        className="text-gray-400 hover:text-red-500 ml-2 shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {loading && (

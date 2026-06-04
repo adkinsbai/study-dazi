@@ -14,6 +14,7 @@ const BodySchema = z.object({
   hours_per_week: z.number().optional(),
   provider: z.string().optional(),
   userProfile: z.string().optional(),
+  materials: z.string().optional(),
 });
 
 const STOP = ['\n\n'];
@@ -62,6 +63,12 @@ export async function POST(req: NextRequest) {
         body.goal && `目标：${body.goal}`,
         body.hours_per_week && `每周投入：${body.hours_per_week}h`,
       ].filter(Boolean).join('\n');
+    }
+
+    // 如果有上传的学习资料，追加到用户消息中
+    if (body.materials) {
+      userMsg += `\n\n以下是我的学习资料，请参考这些内容来设计学习路径：\n\n${body.materials}`;
+      maxTokens += 500; // 资料可能较长，适当增加输出空间
     }
 
     const wantStream = req.headers.get('X-Stream') === 'true';
