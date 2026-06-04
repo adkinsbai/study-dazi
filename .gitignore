@@ -47,3 +47,6 @@ next-env.d.ts
 # claude code / impeccable (local tooling)
 .claude/
 .impeccable/
+python-converter/
+.plan.md
+fix-rls.sql
