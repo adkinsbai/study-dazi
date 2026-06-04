@@ -16,11 +16,11 @@ function detectFormat(name: string): FileFormat {
 /** PDF → Markdown (pdfjs-dist) */
 async function convertPdf(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist');
-  // 禁用 worker，在主线程运行（demo 用途足够）
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  // 使用 unpkg CDN 加载 worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, useWorkerFetch: false }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const parts: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
