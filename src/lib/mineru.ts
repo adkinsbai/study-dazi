@@ -15,12 +15,15 @@ function getStringAtPath(value: unknown, path: string[]): string | null {
 function extractMarkdown(payload: unknown): string {
   const directPaths = [
     ['md'],
+    ['md_content'],
     ['markdown'],
     ['content'],
     ['data', 'md'],
+    ['data', 'md_content'],
     ['data', 'markdown'],
     ['data', 'content'],
     ['result', 'md'],
+    ['result', 'md_content'],
     ['result', 'markdown'],
     ['result', 'content'],
   ];
@@ -44,7 +47,7 @@ function extractMarkdown(payload: unknown): string {
         return null;
       }
       for (const [key, child] of Object.entries(value)) {
-        if (/^(md|markdown|content)$/i.test(key) && typeof child === 'string' && child.trim()) {
+        if (/^(md|md_content|markdown|content)$/i.test(key) && typeof child === 'string' && child.trim()) {
           return child.trim();
         }
         const found = walk(child);

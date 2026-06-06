@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 import { buildMaterialBrief, parseWithMineru } from '@/lib/mineru';
 
+export const maxDuration = 300;
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set([
   'pdf',
