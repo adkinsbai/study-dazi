@@ -18,7 +18,7 @@ export async function GET(
         include: { user: { select: { username: true, avatarUrl: true } } } }),
       prisma.learningPath.findMany({ where: { userId: id, isPublic: true }, orderBy: { createdAt: 'desc' },
         select: { id: true, title: true, domain: true, createdAt: true } }),
-      prisma.resource.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      prisma.resource.findMany({ where: { userId: id, visibility: 'public' }, orderBy: { createdAt: 'desc' }, take: 20 }),
     ]);
 
     if (!user) return NextResponse.json({ error: '用户不存在' }, { status: 404 });

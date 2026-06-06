@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
 
@@ -7,7 +8,12 @@ export async function GET(req: NextRequest) {
   try {
     // 返回所有不重复的领域列表
     if (req.nextUrl.searchParams.get('domains') === '1') {
-      const raw = await prisma.resource.findMany({ select: { domain: true }, distinct: ['domain'], orderBy: { domain: 'asc' } });
+      const raw = await prisma.resource.findMany({
+        where: { visibility: 'public' },
+        select: { domain: true },
+        distinct: ['domain'],
+        orderBy: { domain: 'asc' },
+      });
       return NextResponse.json({ domains: raw.map(r => r.domain) });
     }
 
@@ -24,7 +30,7 @@ export async function GET(req: NextRequest) {
     }
 
     const domain = req.nextUrl.searchParams.get('domain') || '';
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { visibility: 'public' };
     if (domain) where.domain = domain;
 
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1'));
@@ -52,6 +58,7 @@ const CreateSchema = z.object({
   domain: z.string().min(1),
   description: z.string().optional(),
   notes: z.string().optional(),
+  visibility: z.enum(['public', 'private', 'friends', 'buddies']).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -60,15 +67,19 @@ export async function POST(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: '请先登录' }, { status: 401 });
     const payload = await verifyAccessToken(auth);
     const body = CreateSchema.parse(await req.json());
-    const data: Record<string, unknown> = { userId: payload.sub, title: body.title, domain: body.domain };
+    const data: Record<string, unknown> = {
+      userId: payload.sub,
+      title: body.title,
+      domain: body.domain,
+      visibility: body.visibility || 'public',
+    };
     if (body.url) data.url = body.url;
     if (body.fileUrl) { data.fileUrl = body.fileUrl; data.fileName = body.fileName; }
     if (body.description) data.description = body.description;
     if (body.notes) data.notes = body.notes;
 
     const resource = await prisma.resource.create({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: data as any,
+      data: data as Prisma.ResourceUncheckedCreateInput,
       include: { user: { select: { username: true } } },
     });
     return NextResponse.json({ resource }, { status: 201 });
@@ -99,7 +110,7 @@ export async function PATCH(req: NextRequest) {
     if (body.url !== undefined) data.url = body.url;
     if (body.domain !== undefined) data.domain = body.domain;
     if (body.notes !== undefined) data.notes = body.notes;
-    await prisma.resource.update({ where: { id: body.id }, data: data as any });
+    await prisma.resource.update({ where: { id: body.id }, data: data as Prisma.ResourceUncheckedUpdateInput });
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: '参数错误' }, { status: 422 });
