@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
+import { logError } from '@/lib/log';
+
+const PUBLIC_CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=300',
+};
 
 export async function GET(req: NextRequest) {
   try {
     // 返回所有不重复的领域列表
     if (req.nextUrl.searchParams.get('domains') === '1') {
       const raw = await prisma.resource.findMany({ select: { domain: true }, distinct: ['domain'], orderBy: { domain: 'asc' } });
-      return NextResponse.json({ domains: raw.map(r => r.domain) });
+      return NextResponse.json({ domains: raw.map(r => r.domain) }, { headers: PUBLIC_CACHE_HEADERS });
     }
 
     // 返回当前用户的资源
@@ -38,8 +43,12 @@ export async function GET(req: NextRequest) {
       }),
       prisma.resource.count({ where }),
     ]);
-    return NextResponse.json({ resources, total, page, hasMore: skip + resources.length < total });
-  } catch {
+    return NextResponse.json(
+      { resources, total, page, hasMore: skip + resources.length < total },
+      { headers: PUBLIC_CACHE_HEADERS },
+    );
+  } catch (err) {
+    logError('GET /api/resources', err);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }
@@ -117,7 +126,8 @@ export async function DELETE(req: NextRequest) {
     if (!r || r.userId !== payload.sub) return NextResponse.json({ error: '无权操作' }, { status: 403 });
     await prisma.resource.delete({ where: { id: id! } });
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    logError('DELETE /api/resources', err);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }
