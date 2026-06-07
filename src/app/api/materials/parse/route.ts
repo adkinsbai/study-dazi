@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
-import { buildMaterialBrief, parseWithMineru } from '@/lib/mineru';
+import { buildMaterialBrief, parseWithMarkitdown } from '@/lib/markitdown';
 
 export const maxDuration = 300;
 
@@ -42,16 +42,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '仅支持 PDF/DOCX/PPTX/XLSX/图片文件' }, { status: 422 });
     }
 
-    const parsed = await parseWithMineru(file);
+    const parsed = await parseWithMarkitdown(file);
     return NextResponse.json({
       name: file.name,
       markdown: parsed.markdown,
       brief: buildMaterialBrief(parsed.markdown),
-      parser: 'mineru',
+      parser: 'markitdown',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : '解析失败';
-    const status = message.includes('未配置 MINERU_API_URL') ? 503 : 500;
+    const status = message.includes('No module named') || message.includes('markitdown') ? 503 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
