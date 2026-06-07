@@ -11,17 +11,6 @@ export interface MarkitdownParseResult {
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 
-function getMarkitdownApiUrl(): string | null {
-  const url = process.env.MARKITDOWN_API_URL;
-  return url?.trim() || null;
-}
-
-function getMarkitdownApiHeaders(): HeadersInit {
-  return process.env.MARKITDOWN_API_TOKEN
-    ? { Authorization: `Bearer ${process.env.MARKITDOWN_API_TOKEN}` }
-    : {};
-}
-
 function getPythonCommand(): string {
   return process.env.MARKITDOWN_PYTHON || 'python';
 }
@@ -43,51 +32,6 @@ function parseConverterOutput(stdout: string): MarkitdownParseResult {
     throw new Error('MarkItDown 未提取到 Markdown 内容');
   }
   return { markdown, raw: payload };
-}
-
-async function parseWithRemoteMarkitdown(file: File, endpoint: string): Promise<MarkitdownParseResult> {
-  const form = new FormData();
-  form.append('file', file, file.name);
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), getTimeoutMs());
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: getMarkitdownApiHeaders(),
-      body: form,
-      signal: controller.signal,
-    });
-
-    const contentType = res.headers.get('content-type') || '';
-    const payload = contentType.includes('application/json')
-      ? await res.json().catch(() => null)
-      : await res.text().catch(() => '');
-
-    if (!res.ok) {
-      const message = payload && typeof payload === 'object'
-        ? JSON.stringify(payload)
-        : String(payload || '');
-      throw new Error(`MarkItDown 服务解析失败: ${res.status}${message ? ` ${message.slice(0, 300)}` : ''}`);
-    }
-
-    if (typeof payload === 'string') {
-      return parseConverterOutput(payload);
-    }
-
-    const markdown = payload && typeof payload === 'object' && typeof (payload as { markdown?: unknown }).markdown === 'string'
-      ? (payload as { markdown: string }).markdown.trim()
-      : '';
-
-    if (!markdown) {
-      throw new Error('MarkItDown 服务未返回 Markdown 内容');
-    }
-
-    return { markdown, raw: payload };
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 async function runConverter(filePath: string): Promise<MarkitdownParseResult> {
@@ -140,15 +84,6 @@ async function runConverter(filePath: string): Promise<MarkitdownParseResult> {
 }
 
 export async function parseWithMarkitdown(file: File): Promise<MarkitdownParseResult> {
-  const remoteEndpoint = getMarkitdownApiUrl();
-  if (remoteEndpoint) {
-    return await parseWithRemoteMarkitdown(file, remoteEndpoint);
-  }
-
-  if (process.env.VERCEL) {
-    throw new Error('Vercel 部署环境不能直接启动本机 MarkItDown Python 进程，请配置 MARKITDOWN_API_URL 指向外部 MarkItDown 服务');
-  }
-
   const tempDir = path.join(os.tmpdir(), `study-dazi-markitdown-${randomUUID()}`);
   await mkdir(tempDir, { recursive: true });
   const tempPath = path.join(tempDir, safeFileName(file.name));

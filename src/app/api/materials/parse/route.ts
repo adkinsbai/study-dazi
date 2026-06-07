@@ -5,7 +5,7 @@ import { buildMaterialBrief, parseWithMarkitdown } from '@/lib/markitdown';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set([
   'pdf',
   'docx',
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: '文件不能超过 4MB。Vercel 函数请求体有限制，较大文件请先拆分或压缩。' }, { status: 413 });
+      return NextResponse.json({ error: '文件不能超过 50MB' }, { status: 413 });
     }
 
     const ext = getExtension(file.name);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : '解析失败';
-    const status = message.includes('MARKITDOWN_API_URL') || message.includes('No module named') || message.includes('markitdown') ? 503 : 500;
+    const status = message.includes('No module named') || message.includes('markitdown') ? 503 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
