@@ -8,7 +8,6 @@ const CreateSchema = z.object({
   title: z.string().min(1, '请输入路径名称'),
   domain: z.string().min(1),
   tree_data: z.object({}).passthrough(),
-  userProfile: z.string().optional(),
   isPublic: z.boolean().optional(),
   isTemplate: z.boolean().optional(),
 });
@@ -53,7 +52,6 @@ export async function POST(req: NextRequest) {
         title: body.title,
         domain: body.domain,
         treeData: body.tree_data as Prisma.InputJsonValue,
-        userProfile: body.userProfile,
         isPublic: body.isPublic ?? false,
         isTemplate: body.isTemplate ?? false,
       },

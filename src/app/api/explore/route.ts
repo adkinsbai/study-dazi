@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     if (type === 'resources') {
       const domain = req.nextUrl.searchParams.get('domain') || '';
       const search = req.nextUrl.searchParams.get('search') || '';
-      const where: Record<string, unknown> = { visibility: 'public' };
+      const where: Record<string, unknown> = {};
       if (domain) where.domain = domain;
       if (search) where.title = { contains: search, mode: 'insensitive' };
       const [resources, total] = await Promise.all([

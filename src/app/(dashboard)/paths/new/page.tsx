@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import UserProfileForm, { UserProfileData } from '@/components/path/user-profile-form';
 import UserProfileViewer from '@/components/path/user-profile-viewer';
+import { convertFileToMarkdown, detectFormat } from '@/lib/file-converter';
 import { AlertCircle, X, Loader2, FileUp, Check, Sparkles, Save, ArrowLeft, CheckCircle } from 'lucide-react';
 
 const PROVIDERS = [
@@ -34,30 +35,6 @@ interface TreeNode {
   node_type: 'required' | 'optional' | 'advanced';
   resources_hint: string;
   check_criteria: string;
-}
-
-interface ParsedMaterial {
-  name: string;
-  markdown: string;
-  brief: string;
-  parser: 'mineru' | 'fallback';
-}
-
-const SUPPORTED_MATERIAL_EXTENSIONS = new Set([
-  'pdf',
-  'docx',
-  'pptx',
-  'xlsx',
-  'xls',
-  'png',
-  'jpg',
-  'jpeg',
-  'webp',
-]);
-
-function canParseWithMineru(fileName: string): boolean {
-  const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  return SUPPORTED_MATERIAL_EXTENSIONS.has(ext);
 }
 
 export default function NewPathPage() {
@@ -113,7 +90,7 @@ export default function NewPathPage() {
   const [selectedNodes, setSelectedNodes] = useState<Record<string, Set<string>>>({});
 
   // 上传的学习资料
-  const [materials, setMaterials] = useState<ParsedMaterial[]>([]);
+  const [materials, setMaterials] = useState<{ name: string; markdown: string }[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [materialsError, setMaterialsError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -163,25 +140,14 @@ export default function NewPathPage() {
   const handleFiles = useCallback(async (files: FileList) => {
     setMaterialsError('');
     setMaterialsLoading(true);
-    const newMaterials: ParsedMaterial[] = [];
+    const newMaterials: { name: string; markdown: string }[] = [];
     for (const file of Array.from(files)) {
-      if (!canParseWithMineru(file.name)) {
-        setMaterialsError(`不支持: ${file.name}（支持 PDF/DOCX/PPTX/XLSX/图片）`);
+      if (!detectFormat(file.name)) {
+        setMaterialsError(`不支持: ${file.name}（支持 PDF/DOCX/PPTX/HTML）`);
         continue;
       }
       try {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch('/api/materials/parse', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: form,
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'MinerU 解析失败');
-        }
-        const result = await res.json() as ParsedMaterial;
+        const result = await convertFileToMarkdown(file);
         if (result.markdown.trim()) {
           newMaterials.push(result);
         } else {
@@ -195,7 +161,7 @@ export default function NewPathPage() {
       setMaterials(prev => [...prev, ...newMaterials]);
     }
     setMaterialsLoading(false);
-  }, [token]);
+  }, []);
 
   const removeMaterial = useCallback((index: number) => {
     setMaterials(prev => prev.filter((_, i) => i !== index));
@@ -298,7 +264,7 @@ export default function NewPathPage() {
           provider,
           userProfile: userProfile || undefined,
           materials: materials.length > 0
-            ? materials.map(m => `【${m.name}】\n${m.brief || m.markdown.slice(0, 3000)}`).join('\n\n---\n\n')
+            ? materials.map(m => `【${m.name}】\n${m.markdown}`).join('\n\n---\n\n')
             : undefined,
         }),
       });
@@ -486,7 +452,6 @@ export default function NewPathPage() {
           title: `${domain}学习路径`,
           domain,
           tree_data: tree,
-          userProfile: userProfile || undefined,
           isPublic: publicTemplate,
           isTemplate: publicTemplate,
         }),
@@ -494,31 +459,6 @@ export default function NewPathPage() {
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || '保存失败');
-      }
-      const savedPath = await res.json();
-      if (materials.length > 0) {
-        setProgressStatus('正在沉淀学习资料...');
-        await Promise.allSettled(materials.map((material) => fetch('/api/resources', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: material.name,
-            domain,
-            description: `由 MinerU 解析，关联路径：${domain}学习路径`,
-            notes: [
-              `# ${material.name}`,
-              '',
-              `> 来源：新建路径时上传；路径 ID：${savedPath.id}`,
-              `> 解析器：${material.parser}`,
-              '',
-              material.markdown,
-            ].join('\n'),
-            visibility: 'private',
-          }),
-        })));
       }
       router.push('/');
     } catch (err) {
@@ -724,7 +664,7 @@ export default function NewPathPage() {
                 学习资料（可选）
               </label>
               <p className="text-xs text-gray-400 mb-2">
-                上传课程大纲、教材或截图，MinerU 会先解析成结构化资料，再辅助生成路径
+                上传课程大纲、教材目录等，AI 会参考这些内容生成更精准的路径
               </p>
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -738,7 +678,7 @@ export default function NewPathPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.docx,.pptx,.xlsx,.xls,.png,.jpg,.jpeg,.webp"
+                  accept=".pdf,.docx,.pptx,.html,.htm"
                   multiple
                   onChange={(e) => {
                     if (e.target.files?.length) handleFiles(e.target.files);
@@ -747,9 +687,9 @@ export default function NewPathPage() {
                   className="hidden"
                 />
                 {materialsLoading ? (
-                  <p className="text-sm text-blue-500"><Loader2 size={14} className="inline animate-spin mr-1" /> MinerU 正在解析...</p>
+                  <p className="text-sm text-blue-500"><Loader2 size={14} className="inline animate-spin mr-1" /> 正在转换...</p>
                 ) : (
-                  <p className="text-sm text-gray-400"><FileUp size={14} className="inline mr-1" /> 点击或拖拽上传 PDF / DOCX / PPTX / XLSX / 图片</p>
+                  <p className="text-sm text-gray-400"><FileUp size={14} className="inline mr-1" /> 点击或拖拽上传 PDF / DOCX / PPTX / HTML</p>
                 )}
               </div>
               {materialsError && (
@@ -760,7 +700,7 @@ export default function NewPathPage() {
                   {materials.map((m, i) => (
                     <div key={i} className="flex items-center justify-between bg-green-50 rounded px-3 py-1.5 text-sm">
                       <span className="text-green-700 truncate flex-1">
-                        <Check size={12} className="inline mr-1" /> {m.name} <span className="text-green-400">MinerU · {m.markdown.length} 字</span>
+                        <Check size={12} className="inline mr-1" /> {m.name} <span className="text-green-400">({m.markdown.length} 字)</span>
                       </span>
                       <button
                         onClick={() => removeMaterial(i)}
