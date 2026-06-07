@@ -40,7 +40,7 @@ interface ParsedMaterial {
   name: string;
   markdown: string;
   brief: string;
-  parser: 'markitdown' | 'fallback';
+  parser: 'mineru' | 'fallback';
 }
 
 const SUPPORTED_MATERIAL_EXTENSIONS = new Set([
@@ -55,7 +55,7 @@ const SUPPORTED_MATERIAL_EXTENSIONS = new Set([
   'webp',
 ]);
 
-function canParseWithMarkitdown(fileName: string): boolean {
+function canParseWithMineru(fileName: string): boolean {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return SUPPORTED_MATERIAL_EXTENSIONS.has(ext);
 }
@@ -165,7 +165,7 @@ export default function NewPathPage() {
     setMaterialsLoading(true);
     const newMaterials: ParsedMaterial[] = [];
     for (const file of Array.from(files)) {
-      if (!canParseWithMarkitdown(file.name)) {
+      if (!canParseWithMineru(file.name)) {
         setMaterialsError(`不支持: ${file.name}（支持 PDF/DOCX/PPTX/XLSX/图片）`);
         continue;
       }
@@ -179,7 +179,7 @@ export default function NewPathPage() {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'MarkItDown 解析失败');
+          throw new Error(data.error || 'MinerU 解析失败');
         }
         const result = await res.json() as ParsedMaterial;
         if (result.markdown.trim()) {
@@ -507,7 +507,7 @@ export default function NewPathPage() {
           body: JSON.stringify({
             title: material.name,
             domain,
-            description: `由 MarkItDown 解析，关联路径：${domain}学习路径`,
+            description: `由 MinerU 解析，关联路径：${domain}学习路径`,
             notes: [
               `# ${material.name}`,
               '',
@@ -724,7 +724,7 @@ export default function NewPathPage() {
                 学习资料（可选）
               </label>
               <p className="text-xs text-gray-400 mb-2">
-                上传课程大纲、教材或截图，MarkItDown 会先解析成 AI 可读资料，再辅助生成路径
+                上传课程大纲、教材或截图，MinerU 会先解析成结构化资料，再辅助生成路径
               </p>
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -747,7 +747,7 @@ export default function NewPathPage() {
                   className="hidden"
                 />
                 {materialsLoading ? (
-                  <p className="text-sm text-blue-500"><Loader2 size={14} className="inline animate-spin mr-1" /> MarkItDown 正在解析...</p>
+                  <p className="text-sm text-blue-500"><Loader2 size={14} className="inline animate-spin mr-1" /> MinerU 正在解析...</p>
                 ) : (
                   <p className="text-sm text-gray-400"><FileUp size={14} className="inline mr-1" /> 点击或拖拽上传 PDF / DOCX / PPTX / XLSX / 图片</p>
                 )}
@@ -760,7 +760,7 @@ export default function NewPathPage() {
                   {materials.map((m, i) => (
                     <div key={i} className="flex items-center justify-between bg-green-50 rounded px-3 py-1.5 text-sm">
                       <span className="text-green-700 truncate flex-1">
-                        <Check size={12} className="inline mr-1" /> {m.name} <span className="text-green-400">MarkItDown · {m.markdown.length} 字</span>
+                        <Check size={12} className="inline mr-1" /> {m.name} <span className="text-green-400">MinerU · {m.markdown.length} 字</span>
                       </span>
                       <button
                         onClick={() => removeMaterial(i)}
