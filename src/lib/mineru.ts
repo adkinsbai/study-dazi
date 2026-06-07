@@ -72,14 +72,8 @@ export async function parseWithMineru(file: File): Promise<MineruParseResult> {
   if (process.env.MINERU_BACKEND) form.append('backend', process.env.MINERU_BACKEND);
   if (process.env.MINERU_LANG) form.append('lang_list', process.env.MINERU_LANG);
 
-  const headers: HeadersInit = {};
-  if (process.env.MINERU_API_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.MINERU_API_TOKEN}`;
-  }
-
   const res = await fetch(`${baseUrl.replace(/\/$/, '')}/file_parse`, {
     method: 'POST',
-    headers,
     body: form,
   });
 
