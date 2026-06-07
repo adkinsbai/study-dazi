@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
@@ -8,12 +9,43 @@ const PUBLIC_CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=300',
 };
 
+const getCachedResourceDomains = unstable_cache(
+  async () => {
+    const raw = await prisma.resource.findMany({
+      select: { domain: true },
+      distinct: ['domain'],
+      orderBy: { domain: 'asc' },
+    });
+    return raw.map(r => r.domain);
+  },
+  ['public-resource-domains'],
+  { revalidate: 30, tags: ['public-resources'] },
+);
+
+const getCachedPublicResources = unstable_cache(
+  async (domain: string, page: number, limit: number) => {
+    const where: Record<string, unknown> = {};
+    if (domain) where.domain = domain;
+    const skip = (page - 1) * limit;
+    const [resources, total] = await Promise.all([
+      prisma.resource.findMany({
+        where, orderBy: { createdAt: 'desc' }, skip, take: limit,
+        include: { user: { select: { username: true, avatarUrl: true } } },
+      }),
+      prisma.resource.count({ where }),
+    ]);
+    return { resources, total, page, hasMore: skip + resources.length < total };
+  },
+  ['public-resources'],
+  { revalidate: 30, tags: ['public-resources'] },
+);
+
 export async function GET(req: NextRequest) {
   try {
     // 返回所有不重复的领域列表
     if (req.nextUrl.searchParams.get('domains') === '1') {
-      const raw = await prisma.resource.findMany({ select: { domain: true }, distinct: ['domain'], orderBy: { domain: 'asc' } });
-      return NextResponse.json({ domains: raw.map(r => r.domain) }, { headers: PUBLIC_CACHE_HEADERS });
+      const domains = await getCachedResourceDomains();
+      return NextResponse.json({ domains }, { headers: PUBLIC_CACHE_HEADERS });
     }
 
     // 返回当前用户的资源
@@ -29,22 +61,11 @@ export async function GET(req: NextRequest) {
     }
 
     const domain = req.nextUrl.searchParams.get('domain') || '';
-    const where: Record<string, unknown> = {};
-    if (domain) where.domain = domain;
-
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1'));
     const limit = Math.min(50, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit') || '20')));
-    const skip = (page - 1) * limit;
-
-    const [resources, total] = await Promise.all([
-      prisma.resource.findMany({
-        where, orderBy: { createdAt: 'desc' }, skip, take: limit,
-        include: { user: { select: { username: true, avatarUrl: true } } },
-      }),
-      prisma.resource.count({ where }),
-    ]);
+    const data = await getCachedPublicResources(domain, page, limit);
     return NextResponse.json(
-      { resources, total, page, hasMore: skip + resources.length < total },
+      data,
       { headers: PUBLIC_CACHE_HEADERS },
     );
   } catch (err) {
