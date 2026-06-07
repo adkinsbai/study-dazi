@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 import { buildMaterialBrief, parseWithMarkitdown } from '@/lib/markitdown';
 
-export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
