@@ -300,3 +300,47 @@ model UserApiKey {
   @@unique([userId, provider])
   @@map("user_api_keys")
 }
+
+/// 结构化资源库 —— YouTube/B站/Coursera 等平台的课程索引
+model ResourceIndex {
+  id          String   @id @default(uuid())
+  platform    String   // youtube | bilibili | coursera | mit_ocw | other
+  externalId  String?  @map("external_id") // YouTube videoId / B站 bvid
+  title       String
+  url         String
+  instructor  String?
+  thumbnail   String?
+  duration    Int?     // 总时长（秒）
+  language    String?  // zh / en
+  difficulty  String?  // beginner | intermediate | advanced
+  domain      String   // 所属领域（如：前端开发、模拟IC设计）
+  tags        Json     @default("[]") // 知识点标签 ["CMOS","偏置电路"]
+  rating      Float?   // 综合评分 0-5
+  viewCount   Int?     @default(0) @map("view_count")
+  isFree      Boolean  @default(true) @map("is_free")
+  lastChecked DateTime @map("last_checked")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  nodeLinks NodeResource[]
+
+  @@index([domain, difficulty])
+  @@index([platform, domain])
+  @@index([domain])
+  @@map("resource_index")
+}
+
+/// 节点-资源关联（多对多）
+model NodeResource {
+  id         String @id @default(uuid())
+  pathId     String @map("path_id")
+  nodeId     String @map("node_id")
+  resourceId String @map("resource_id")
+  relevance  Float  @default(0) // AI 计算的相关度 0-1
+  addedBy    String @default("ai") @map("added_by") // ai | user
+
+  resource ResourceIndex @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([nodeId, resourceId])
+  @@index([pathId, nodeId])
+  @@map("node_resources")
+}

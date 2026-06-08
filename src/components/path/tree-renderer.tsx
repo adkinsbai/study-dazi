@@ -11,6 +11,7 @@ export interface TreeNode {
   node_type: 'required' | 'optional' | 'advanced';
   resources_hint?: string;
   check_criteria?: string;
+  keywords?: string[];
   children?: TreeNode[];
   // top-level phase fields (used for phase nodes)
   is_required?: boolean;
