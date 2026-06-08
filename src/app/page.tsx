@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
 import Link from 'next/link';
@@ -31,34 +31,23 @@ export default function Home() {
   const [buddyCount, setBuddyCount] = useState(0);
   const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string; avatarUrl?: string | null }; sharedPathId?: string | null; sharedPathTitle?: string | null }[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      const token = useAuthStore.getState().token;
-      if (token) refreshBadges(token);
-      checkApiKey();
-      loadPaths();
-      loadFriendCount();
-      loadBuddyCount();
-    }
-  }, [user]);
-
-  const loadFriendCount = async () => {
+  const loadFriendCount = useCallback(async () => {
     try {
       const token = useAuthStore.getState().token;
       const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setFriendCount(d.friends?.length || 0); }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const loadBuddyCount = async () => {
+  const loadBuddyCount = useCallback(async () => {
     try {
       const token = useAuthStore.getState().token;
       const res = await fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setBuddyCount((d.buddies || []).length); setBuddies(d.buddies || []); }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const checkApiKey = async () => {
+  const checkApiKey = useCallback(async () => {
     try {
       const token = useAuthStore.getState().token;
       const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } });
@@ -68,9 +57,9 @@ export default function Home() {
         if (!hasAnyKey) setShowKeyModal(true);
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
-  const loadPaths = async () => {
+  const loadPaths = useCallback(async () => {
     setPathsLoading(true);
     try {
       const token = useAuthStore.getState().token;
@@ -78,7 +67,18 @@ export default function Home() {
       if (res.ok) { const data = await res.json(); setPaths(data.paths || []); }
     } catch { /* ignore */ }
     finally { setPathsLoading(false); }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      const token = useAuthStore.getState().token;
+      if (token) refreshBadges(token);
+      checkApiKey();
+      loadPaths();
+      loadFriendCount();
+      loadBuddyCount();
+    }
+  }, [checkApiKey, loadBuddyCount, loadFriendCount, loadPaths, refreshBadges, user]);
 
   const handleDeletePath = async (e: React.MouseEvent, pathId: string, title: string) => {
     e.preventDefault();

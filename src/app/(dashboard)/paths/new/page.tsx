@@ -54,7 +54,6 @@ export default function NewPathPage() {
 
   // 用户画像相关状态
   const [userProfile, setUserProfile] = useState<string | null>(null);
-  const [profileData, setProfileData] = useState<UserProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileProgress, setProfileProgress] = useState(0);
   const [profileProgressStatus, setProfileProgressStatus] = useState('');
@@ -75,7 +74,7 @@ export default function NewPathPage() {
         })
         .catch(() => {});
     }
-  }, [token]);
+  }, [provider, token]);
 
   const [publicTemplate, setPublicTemplate] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -213,7 +212,6 @@ export default function NewPathPage() {
       setProfileProgress(100);
       setProfileProgressStatus('完成！');
       setUserProfile(result.profile || '');
-      setProfileData(data);
       // 根据问卷数据自动填充原有字段
       const levelMap: Record<string, '零基础' | '有基础' | '进阶'> = {
         zero: '零基础',

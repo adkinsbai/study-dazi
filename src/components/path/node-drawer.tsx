@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
-import { X, Check, Flame, Bookmark, Play, PartyPopper, RotateCcw, Clock, BookOpen, CheckCircle, Library, FileText, Lightbulb, MessageCircle } from 'lucide-react';
+import { X, Check, Flame, Bookmark, Play, PartyPopper, RotateCcw, Clock } from 'lucide-react';
 import type { TreeNode, NodeStatus, ProgressMap } from './tree-renderer';
 
 interface NodeDrawerProps {
@@ -16,15 +16,9 @@ interface NodeDrawerProps {
 
 export function NodeDrawer({ node, pathId, progressMap, onClose, onProgressChange, readOnly }: NodeDrawerProps) {
   const token = useAuthStore((s) => s.token);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(() => node ? progressMap[node.id]?.notes || '' : '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-
-  useEffect(() => {
-    if (node) {
-      setNotes(progressMap[node.id]?.notes || '');
-    }
-  }, [node, progressMap]);
 
   if (!node) return null;
 
@@ -211,14 +205,14 @@ function CommentsSection({ pathId, nodeId }: { pathId: string; nodeId: string })
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { loadComments(); }, [pathId, nodeId]);
-
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     try {
       const res = await fetch(`/api/comments?pathId=${pathId}&nodeId=${nodeId}`);
       if (res.ok) { const d = await res.json(); setComments(d.comments || []); }
     } catch { /* ignore */ }
-  };
+  }, [pathId, nodeId]);
+
+  useEffect(() => { loadComments(); }, [loadComments]);
 
   const handleSubmit = async () => {
     if (!text.trim()) return;

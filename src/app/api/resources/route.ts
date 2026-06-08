@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
 import { logError } from '@/lib/log';
@@ -124,12 +125,12 @@ export async function PATCH(req: NextRequest) {
     const body = PatchSchema.parse(await req.json());
     const r = await prisma.resource.findUnique({ where: { id: body.id } });
     if (!r || r.userId !== payload.sub) return NextResponse.json({ error: '无权操作' }, { status: 403 });
-    const data: Record<string, unknown> = {};
+    const data: Prisma.ResourceUpdateInput = {};
     if (body.title !== undefined) data.title = body.title;
     if (body.url !== undefined) data.url = body.url;
     if (body.domain !== undefined) data.domain = body.domain;
     if (body.notes !== undefined) data.notes = body.notes;
-    await prisma.resource.update({ where: { id: body.id }, data: data as any });
+    await prisma.resource.update({ where: { id: body.id }, data });
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: '参数错误' }, { status: 422 });

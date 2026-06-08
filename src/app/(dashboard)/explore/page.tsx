@@ -39,7 +39,7 @@ export default function ExplorePage() {
 
   useEffect(() => { loadTab('posts'); loadDomains(); loadLikes(); }, []);
 
-  const loadLikes = async () => {
+  async function loadLikes() {
     try {
       const res = await fetch('/api/likes', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
@@ -63,24 +63,34 @@ export default function ExplorePage() {
         await fetch('/api/likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ postId, resourceId }) });
       }
       if (postId) {
-        setLikedPostIds(prev => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
+        setLikedPostIds(prev => {
+          const n = new Set(prev);
+          if (isLiked) n.delete(postId);
+          else n.add(postId);
+          return n;
+        });
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, likeCount: (p.likeCount ?? 0) + (isLiked ? -1 : 1) } : p));
       }
       if (resourceId) {
-        setLikedResourceIds(prev => { const n = new Set(prev); isLiked ? n.delete(resourceId!) : n.add(resourceId!); return n; });
+        setLikedResourceIds(prev => {
+          const n = new Set(prev);
+          if (isLiked) n.delete(resourceId);
+          else n.add(resourceId);
+          return n;
+        });
         setResources(prev => prev.map(r => r.id === resourceId ? { ...r, likeCount: (r.likeCount ?? 0) + (isLiked ? -1 : 1) } : r));
       }
     } catch { /* ignore */ }
   };
 
-  const loadDomains = async () => {
+  async function loadDomains() {
     try {
       const res = await fetch('/api/resources?domains=1');
       if (res.ok) { const d = await res.json(); setSuggestedDomains(d.domains || []); }
     } catch { /* ignore */ }
   };
 
-  const loadTab = async (t: Tab, d = '') => {
+  async function loadTab(t: Tab, d = '') {
     setLoading(true);
     try {
       if (t === 'posts') {
@@ -189,7 +199,7 @@ export default function ExplorePage() {
                     <div className="flex items-center gap-3 px-5 pt-4 pb-2">
                       <Link href={`/profile/${p.user.id}`} className="shrink-0">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
-                          {p.user.avatarUrl ? <img src={p.user.avatarUrl} className="w-full h-full object-cover" /> : p.user.username[0]}
+                          {p.user.avatarUrl ? <img src={p.user.avatarUrl} className="w-full h-full object-cover" alt="" /> : p.user.username[0]}
                         </div>
                       </Link>
                       <div className="flex-1 min-w-0">
@@ -355,7 +365,7 @@ export default function ExplorePage() {
                         </Link>
                         <div className="flex items-center gap-2 mb-4">
                           <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[9px] text-gray-500 overflow-hidden">
-                            {t.user.avatarUrl ? <img src={t.user.avatarUrl} className="w-full h-full object-cover" /> : t.user.username[0]}
+                            {t.user.avatarUrl ? <img src={t.user.avatarUrl} className="w-full h-full object-cover" alt="" /> : t.user.username[0]}
                           </div>
                           <span className="text-xs text-gray-500">{t.user.username}</span>
                         </div>
@@ -424,7 +434,7 @@ function InlineComments({ targetId, type, commentCount: initialCount, topComment
           {comments.length === 0 && <p className="text-xs text-gray-300 pl-6">暂无评论，说点什么吧</p>}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2.5 pl-6">
-              <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 overflow-hidden">{c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" /> : c.user.username[0]}</span>
+              <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 overflow-hidden">{c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" alt="" /> : c.user.username[0]}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs"><span className="font-semibold text-gray-800">{c.user.username}</span> <span className="text-gray-600">{c.content}</span></p>
                 <p className="text-[10px] text-gray-300 mt-0.5">{new Date(c.createdAt).toLocaleDateString('zh-CN')}</p>

@@ -40,7 +40,7 @@ function generateIcon(size) {
       const idx = (y * size + x) * 4;
 
       // Rounded corners
-      const cx = size / 2, cy = size / 2, cr = size * 0.43;
+      const cx = size / 2, cy = size / 2;
       const dx = Math.max(Math.abs(x - cx) - (size / 2 - size * 0.15), 0);
       const dy = Math.max(Math.abs(y - cy) - (size / 2 - size * 0.15), 0);
       const corner = Math.sqrt(dx * dx + dy * dy) > size * 0.15;

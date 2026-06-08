@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
-import { Check, X, FileText, Trash2, Paperclip, Users, Edit3 } from 'lucide-react';
+import { Check, X, FileText, Trash2, Paperclip, Edit3 } from 'lucide-react';
 
 type Tab = 'posts' | 'resources' | 'paths';
 
@@ -13,6 +13,7 @@ interface PathItem { id: string; title: string; domain: string; isTemplate: bool
 
 export default function ProfilePage() {
   const user = useAuthStore(s => s.user);
+  const userId = user?.id;
   const token = useAuthStore(s => s.token);
   const setAuth = useAuthStore(s => s.setAuth);
   const [profile, setProfile] = useState<{ username: string; avatarUrl: string; bio: string } | null>(null);
@@ -45,13 +46,11 @@ export default function ProfilePage() {
   const [editingItem, setEditingItem] = useState<{ id: string; type: string; title?: string; content?: string; url?: string; domain?: string; notes?: string } | null>(null);
   const [editItemForm, setEditItemForm] = useState({ title: '', content: '', url: '', domain: '', notes: '' });
 
-  useEffect(() => { if (token && user) loadAll(); }, [token, user]);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
       const [postRes, resRes, pathRes, meRes] = await Promise.all([
-        fetch(`/api/posts?userId=${user?.id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/posts?userId=${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/resources?mine=1', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/paths', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } }),
@@ -61,7 +60,9 @@ export default function ProfilePage() {
       if (pathRes.ok) setPaths((await pathRes.json()).paths || []);
       if (meRes.ok) { const d = await meRes.json(); setProfile({ username: d.username, avatarUrl: d.avatarUrl || '', bio: d.bio || '' }); }
     } catch { /* ignore */ } finally { setLoading(false); }
-  };
+  }, [token, userId]);
+
+  useEffect(() => { if (token && user) loadAll(); }, [loadAll, token, user]);
 
   // --- Profile edit ---
   const [profileSaved, setProfileSaved] = useState(false);
@@ -86,7 +87,10 @@ export default function ProfilePage() {
     try {
       const form = new FormData(); form.append('file', file);
       const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
-      if (res.ok) { const d = await res.json(); d.url && setNewImages(prev => [...prev, d.url]); }
+        if (res.ok) {
+          const d = await res.json();
+          if (d.url) setNewImages(prev => [...prev, d.url]);
+        }
     } catch { /* ignore */ } finally { setUploading(false); }
   };
 
@@ -190,7 +194,7 @@ export default function ProfilePage() {
                     <div className="flex gap-1 flex-wrap">
                       {newImages.map((url, i) => (
                         <div key={i} className="relative w-16 h-16 rounded overflow-hidden">
-                          <img src={url} className="w-full h-full object-cover" />
+                          <img src={url} className="w-full h-full object-cover" alt="待发布图片" />
                           <button onClick={() => setNewImages(prev => prev.filter((_, j) => j !== i))}
                             className="absolute top-0 right-0 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center"><X size={10} /></button>
                         </div>
@@ -228,7 +232,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-sm whitespace-pre-wrap">{p.content}</p>
                     {p.markdown && <p className="text-xs text-gray-500 mt-1 italic">{p.markdown.substring(0, 100)}</p>}
-                    {p.images?.length > 0 && <div className="mt-1 flex gap-1">{p.images.map((url, i) => <img key={i} src={url} className="w-14 h-14 object-cover rounded" />)}</div>}
+                    {p.images?.length > 0 && <div className="mt-1 flex gap-1">{p.images.map((url, i) => <img key={i} src={url} className="w-14 h-14 object-cover rounded" alt="动态图片" />)}</div>}
                   </div>
                 ))}
               </div>

@@ -10,38 +10,20 @@ function urlB64ToUint8Array(base64String: string) {
   return Uint8Array.from(rawData, (char) => char.charCodeAt(0));
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 export function PwaRegister() {
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
-  const [installable, setInstallable] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [installable, setInstallable] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !window.matchMedia('(display-mode: standalone)').matches;
+  });
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
-
-  // 注册 SW + 监听安装提示
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setInstallable(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setInstallable(false);
-    }
-
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  // 用户登录后自动订阅推送
-  useEffect(() => {
-    if (!token || !user) return;
-    subscribeToPush(token);
-  }, [token, user]);
 
   const subscribeToPush = useCallback(async (authToken: string) => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -70,6 +52,28 @@ export function PwaRegister() {
       // 推送订阅失败不阻塞用户
     }
   }, []);
+
+  // 注册 SW + 监听安装提示
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  // 用户登录后自动订阅推送
+  useEffect(() => {
+    if (!token || !user) return;
+    subscribeToPush(token);
+  }, [subscribeToPush, token, user]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;

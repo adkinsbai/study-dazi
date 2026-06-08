@@ -66,9 +66,6 @@ function isRequiredNode(node: TreeNode): boolean {
 function computeNodeStatus(
   node: TreeNode,
   progressMap: ProgressMap,
-  _ancestorNodes: TreeNode[],
-  _siblingIndex: number,
-  _siblings: TreeNode[],
 ): NodeStatus {
   const hasChildren = node.children && node.children.length > 0;
 
@@ -144,7 +141,7 @@ export function TreeRenderer({
   return (
     <div className="tree-branch" style={{ paddingLeft: level > 0 ? 24 : 0 }}>
       {nodes.map((node, i) => {
-        const status = computeNodeStatus(node, progressMap, ancestorNodes, i, nodes);
+        const status = computeNodeStatus(node, progressMap);
         const hasChildren = node.children && node.children.length > 0;
         const isExpanded = expanded[node.id] !== false;
         const isLast = i === nodes.length - 1;

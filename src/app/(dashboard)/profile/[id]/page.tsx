@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { Users, MessageCircle, Check } from 'lucide-react';
@@ -40,7 +40,14 @@ export default function FriendProfilePage() {
   const [buddyError, setBuddyError] = useState('');
   const [buddySuccess, setBuddySuccess] = useState(false);
 
-  useEffect(() => { if (token && id) loadData(); }, [token, id]);
+  const loadData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setUser(d.user); setPosts(d.posts || []); setPaths(d.paths || []); setResources(d.resources || []); }
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [id, token]);
+
+  useEffect(() => { if (token && id) loadData(); }, [id, loadData, token]);
 
   const openBuddy = async () => {
     setShowBuddy(true); setBuddyError(''); setBuddySuccess(false);
@@ -68,13 +75,6 @@ export default function FriendProfilePage() {
     } catch { setBuddyError('网络错误'); } finally { setBuddySending(false); }
   };
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`/api/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setUser(d.user); setPosts(d.posts || []); setPaths(d.paths || []); setResources(d.resources || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
-  };
-
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-400">加载中...</p></div>;
   if (!user) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-400">用户不存在</p></div>;
 
@@ -91,7 +91,7 @@ export default function FriendProfilePage() {
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-[#fde8e6] flex items-center justify-center text-xl shrink-0 overflow-hidden">
-              {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" /> : user.username[0]?.toUpperCase()}
+              {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" alt="" /> : user.username[0]?.toUpperCase()}
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold">{user.username}</h2>
@@ -170,7 +170,7 @@ export default function FriendProfilePage() {
               {post.images?.length > 0 && (
                 <div className={`mt-2 grid gap-2 ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                   {post.images.map((url, i) => (
-                    <img key={i} src={url} className="rounded-lg w-full object-cover max-h-48" />
+                    <img key={i} src={url} className="rounded-lg w-full object-cover max-h-48" alt="动态图片" />
                   ))}
                 </div>
               )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 
 interface HeatmapDay {
@@ -15,15 +15,11 @@ export function CheckInWidget() {
   const [heatmap, setHeatmap] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
-  useEffect(() => {
-    if (token) loadData();
-  }, [token]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const res = await fetch(`/api/checkins?year=${now.getFullYear()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -36,7 +32,11 @@ export function CheckInWidget() {
       const today = new Date().toISOString().slice(0, 10);
       setTodayDone(data.heatmap?.some((d: HeatmapDay) => d.date === today));
     } catch { /* ignore */ }
-  };
+  }, [now, token]);
+
+  useEffect(() => {
+    if (token) loadData();
+  }, [loadData, token]);
 
   const handleCheckIn = async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ export function CheckInWidget() {
 
     const checkedCount = squares.filter(s => s.checked).length;
     return { squares, checkedCount, daysInMonth };
-  }, [heatmap, viewYear, viewMonth]);
+  }, [heatmap, now, viewYear, viewMonth]);
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }

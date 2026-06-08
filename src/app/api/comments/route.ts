@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
       const [type, ...rest] = nodeId.split('-');
       const refId = rest.join('-');
       let ownerId: string | null = null;
-      let refType = type;
       if (type === 'post') {
         const post = await prisma.post.findUnique({ where: { id: refId }, select: { userId: true } });
         ownerId = post?.userId ?? null;

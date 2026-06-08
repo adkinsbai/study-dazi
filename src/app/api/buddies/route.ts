@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
 import { pushToUser } from '@/lib/push';
@@ -67,9 +68,9 @@ export async function POST(req: NextRequest) {
     if (exist) return NextResponse.json({ error: '已发送过邀请' }, { status: 400 });
 
     const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
-    const createData: Record<string, unknown> = { fromUserId: payload.sub, toUserId, domain };
+    const createData: Prisma.StudyBuddyUncheckedCreateInput = { fromUserId: payload.sub, toUserId, domain };
     if (sharedPathId) createData.sharedPathId = sharedPathId;
-    await prisma.studyBuddy.create({ data: createData as any });
+    await prisma.studyBuddy.create({ data: createData });
     const pathHint = sharedPathId ? '，已附带共享路径' : '';
     await prisma.notification.create({
       data: { userId: toUserId, type: 'buddy_invite', content: `${fromUser?.username || '用户'} 邀请你成为「${domain}」搭子${pathHint}。请前往好友页面 → 搭子区域接受`, referenceId: payload.sub },

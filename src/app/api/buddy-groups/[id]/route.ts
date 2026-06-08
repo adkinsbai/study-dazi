@@ -31,7 +31,7 @@ export async function GET(
 
     // Load shared path + all members progress
     let pathData = null;
-    let progressMap: Record<string, Record<string, { status: string }>> = {};
+    const progressMap: Record<string, Record<string, { status: string }>> = {};
 
     if (group.sharedPathId) {
       const path = await prisma.learningPath.findUnique({

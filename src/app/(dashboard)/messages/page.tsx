@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
 import { useSearchParams } from 'next/navigation';
@@ -28,7 +28,20 @@ function MessagesPageInner() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
 
-  useEffect(() => { if (token) loadConvs(); }, [token]);
+  const loadConvs = useCallback(async () => {
+    const res = await fetch('/api/messages', { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) { const d = await res.json(); setConvs(d.conversations || []); }
+  }, [token]);
+
+  const openChat = useCallback(async (user: { id: string; username: string; avatarUrl?: string | null }) => {
+    setChatUser(user);
+    const res = await fetch(`/api/messages?with=${user.id}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) { const d = await res.json(); setMsgs(d.messages || []); }
+    loadConvs();
+    if (token) refreshBadges(token);
+  }, [loadConvs, refreshBadges, token]);
+
+  useEffect(() => { if (token) loadConvs(); }, [loadConvs, token]);
 
   useEffect(() => {
     const withId = params.get('with');
@@ -41,20 +54,7 @@ function MessagesPageInner() {
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.user) openChat({ id: d.user.id, username: d.user.username, avatarUrl: d.user.avatarUrl }); });
     }
-  }, [params, convs]);
-
-  const loadConvs = async () => {
-    const res = await fetch('/api/messages', { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setConvs(d.conversations || []); }
-  };
-
-  const openChat = async (user: { id: string; username: string; avatarUrl?: string | null }) => {
-    setChatUser(user);
-    const res = await fetch(`/api/messages?with=${user.id}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setMsgs(d.messages || []); }
-    loadConvs();
-    if (token) refreshBadges(token);
-  };
+  }, [chatUser?.id, convs, openChat, params, token]);
 
   const sendMsg = async () => {
     if (!text.trim() || !chatUser) return;
@@ -87,7 +87,7 @@ function MessagesPageInner() {
                 className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 text-left transition-colors ${chatUser?.id === c.user.id ? 'bg-[#fef4f3] border-r-2 border-[#f97066]' : 'border-r-2 border-transparent'}`}>
                 <div className="relative shrink-0">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
-                    {c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" /> : c.user.username[0]?.toUpperCase()}
+                    {c.user.avatarUrl ? <img src={c.user.avatarUrl} className="w-full h-full object-cover" alt="" /> : c.user.username[0]?.toUpperCase()}
                   </div>
                   {c.unread > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[#ef4444] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
@@ -122,7 +122,7 @@ function MessagesPageInner() {
               <div className="bg-white/90 backdrop-blur-md border-b border-[#fde8e6] px-4 py-3 flex items-center gap-3 shrink-0">
                 <button onClick={() => setChatUser(null)} className="md:hidden p-1 rounded-full text-gray-400 hover:bg-gray-100 transition-colors">←</button>
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
-                  {chatUser.avatarUrl ? <img src={chatUser.avatarUrl} className="w-full h-full object-cover" /> : chatUser.username[0]?.toUpperCase()}
+                  {chatUser.avatarUrl ? <img src={chatUser.avatarUrl} className="w-full h-full object-cover" alt="" /> : chatUser.username[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{chatUser.username}</span>
               </div>

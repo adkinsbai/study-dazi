@@ -67,7 +67,7 @@ export default function NotificationsPage() {
       refreshBadges(token);
     };
     load();
-  }, [token]);
+  }, [refreshBadges, token]);
 
   const markOne = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

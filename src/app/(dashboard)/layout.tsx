@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user) return;
     const token = useAuthStore.getState().token;
     if (token) refreshBadges(token);
-  }, [user]);
+  }, [refreshBadges, user]);
 
   if (!user) return <>{children}</>;
 

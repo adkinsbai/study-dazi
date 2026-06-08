@@ -6,8 +6,8 @@ vi.mock('@/lib/auth', () => ({
   verifyAccessToken: vi.fn(),
 }));
 
-vi.mock('@/lib/deepseek', () => ({
-  chatWithDeepSeek: vi.fn(),
+vi.mock('@/lib/ai', () => ({
+  chatCompletionStream: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -15,11 +15,14 @@ vi.mock('@/lib/prisma', () => ({
     user: {
       findUnique: vi.fn(),
     },
+    userApiKey: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
 import { verifyAccessToken } from '@/lib/auth';
-import { chatWithDeepSeek } from '@/lib/deepseek';
+import { chatCompletionStream } from '@/lib/ai';
 import prisma from '@/lib/prisma';
 
 // --- Helpers ---
@@ -34,12 +37,31 @@ function mockAuth() {
     email: 'test@example.com',
     deepseekApiKey: 'sk-test-key',
   } as never);
+  vi.mocked(prisma.userApiKey.findUnique).mockResolvedValue(null as never);
 }
 
-function buildReq(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/paths/generate/framework', {
+function mockAIStream(text: string) {
+  vi.mocked(chatCompletionStream).mockResolvedValue(new ReadableStream<string>({
+    start(controller) {
+      controller.enqueue(text);
+      controller.close();
+    },
+  }));
+}
+
+async function readSseResult(res: Response) {
+  const text = await res.text();
+  const doneLine = text
+    .split('\n')
+    .find((line) => line.startsWith('data: ') && line.includes('"result"'));
+  if (!doneLine) throw new Error(`Missing done event in SSE response: ${text}`);
+  return JSON.parse(doneLine.slice(6)).result;
+}
+
+function buildReq(url: string, body: Record<string, unknown>) {
+  return new NextRequest(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token', 'X-Stream': 'true' },
     body: JSON.stringify(body),
   });
 }
@@ -52,13 +74,12 @@ beforeEach(() => {
 describe('POST /api/paths/generate/framework', () => {
   it('returns { phases: [...] } when AI returns bare array', async () => {
     mockAuth();
-    // Simulate DeepSeek returning a bare JSON array (the bug scenario)
-    vi.mocked(chatWithDeepSeek).mockResolvedValue('[{"id":"1","title":"阶段一","description":"基础","estimated_hours":10,"is_required":true,"why":"打基础"}]');
+    mockAIStream('[{"id":"1","title":"阶段一","description":"基础","estimated_hours":10,"is_required":true,"why":"打基础"}]');
 
     const { POST } = await import('@/app/api/paths/generate/framework/route');
-    const req = buildReq({ domain: 'React', level: '零基础' });
+    const req = buildReq('http://localhost/api/paths/generate/framework', { domain: 'React', level: '零基础' });
     const res = await POST(req);
-    const data = await res.json();
+    const data = await readSseResult(res);
 
     expect(res.status).toBe(200);
     expect(data).toHaveProperty('phases');
@@ -69,12 +90,12 @@ describe('POST /api/paths/generate/framework', () => {
 
   it('passes through when AI already returns { phases: [...] }', async () => {
     mockAuth();
-    vi.mocked(chatWithDeepSeek).mockResolvedValue('{"phases":[{"id":"1","title":"已包裹","description":"d","estimated_hours":5,"is_required":true,"why":"w"}]}');
+    mockAIStream('{"phases":[{"id":"1","title":"已包裹","description":"d","estimated_hours":5,"is_required":true,"why":"w"}]}');
 
     const { POST } = await import('@/app/api/paths/generate/framework/route');
-    const req = buildReq({ domain: 'React', level: '零基础' });
+    const req = buildReq('http://localhost/api/paths/generate/framework', { domain: 'React', level: '零基础' });
     const res = await POST(req);
-    const data = await res.json();
+    const data = await readSseResult(res);
 
     expect(res.status).toBe(200);
     expect(data).toHaveProperty('phases');
@@ -86,21 +107,20 @@ describe('POST /api/paths/generate/framework', () => {
 describe('POST /api/paths/generate/nodes', () => {
   it('returns { nodes: [...] } when AI returns bare array', async () => {
     mockAuth();
-    vi.mocked(chatWithDeepSeek).mockResolvedValue('[{"id":"n1","title":"子节点一","description":"d","estimated_hours":3,"node_type":"required","resources_hint":"r","check_criteria":"c"}]');
+    mockAIStream('[{"id":"n1","title":"子节点一","description":"d","estimated_hours":3,"node_type":"required","resources_hint":"r","check_criteria":"c"}]');
 
     const { POST } = await import('@/app/api/paths/generate/nodes/route');
-    const req = new NextRequest('http://localhost/api/paths/generate/nodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
-      body: JSON.stringify({
+    const req = buildReq(
+      'http://localhost/api/paths/generate/nodes',
+      {
         domain: 'React',
         phases_json: '[{"id":"1","title":"P1"}]',
         phase_id: '1',
         phase_title: 'P1',
-      }),
-    });
+      },
+    );
     const res = await POST(req);
-    const data = await res.json();
+    const data = await readSseResult(res);
 
     expect(res.status).toBe(200);
     expect(data).toHaveProperty('nodes');
@@ -111,21 +131,20 @@ describe('POST /api/paths/generate/nodes', () => {
 
   it('passes through when AI already returns { nodes: [...] }', async () => {
     mockAuth();
-    vi.mocked(chatWithDeepSeek).mockResolvedValue('{"nodes":[{"id":"n1","title":"已包裹节点","description":"d","estimated_hours":2,"node_type":"required","resources_hint":"r","check_criteria":"c"}]}');
+    mockAIStream('{"nodes":[{"id":"n1","title":"已包裹节点","description":"d","estimated_hours":2,"node_type":"required","resources_hint":"r","check_criteria":"c"}]}');
 
     const { POST } = await import('@/app/api/paths/generate/nodes/route');
-    const req = new NextRequest('http://localhost/api/paths/generate/nodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
-      body: JSON.stringify({
+    const req = buildReq(
+      'http://localhost/api/paths/generate/nodes',
+      {
         domain: 'React',
         phases_json: '[{"id":"1","title":"P1"}]',
         phase_id: '1',
         phase_title: 'P1',
-      }),
-    });
+      },
+    );
     const res = await POST(req);
-    const data = await res.json();
+    const data = await readSseResult(res);
 
     expect(res.status).toBe(200);
     expect(data).toHaveProperty('nodes');

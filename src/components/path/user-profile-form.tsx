@@ -142,8 +142,6 @@ export default function UserProfileForm({ domain, onSubmit, onBack, loading }: U
     }
   };
 
-  const selectedGoal = GOALS.find(g => g.id === data.goal);
-
   return (
     <div className="bg-white rounded-2xl shadow-sm p-6">
       {/* 进度条 */}

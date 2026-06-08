@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
 import { Clock, Users, Plus, ChevronDown, BookOpen } from 'lucide-react';
@@ -20,6 +20,20 @@ interface TreeNode {
 interface ProgressMap {
   [userId: string]: { [nodeId: string]: { status: string } };
 }
+interface GroupPath {
+  id: string;
+  title: string;
+  treeData: { phases?: TreeNode[] };
+}
+interface BuddyListItem {
+  buddy: { id: string; username: string };
+}
+interface SoloBuddy {
+  buddyId: string;
+  domain: string;
+  sharedPathId?: string | null;
+  buddy: { id: string; username: string; avatarUrl: string | null };
+}
 
 // ─── Avatar ───────────────────────────────────────
 function Avatar({ username, avatarUrl }: { username: string; avatarUrl?: string | null }) {
@@ -29,22 +43,6 @@ function Avatar({ username, avatarUrl }: { username: string; avatarUrl?: string 
     <div className={`w-8 h-8 rounded-full ${colors[idx]} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden ring-2 ring-white`}>
       {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" alt="" /> : username[0]?.toUpperCase()}
     </div>
-  );
-}
-
-// ─── Progress ring ────────────────────────────────
-function ProgressRing({ pct, size = 48 }: { pct: number; size?: number }) {
-  const r = (size - 6) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - pct / 100);
-  return (
-    <svg width={size} height={size} className="-rotate-90 shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth="3" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#8b5cf6" strokeWidth="3"
-        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
-      <text x={size / 2} y={size / 2 + 4} textAnchor="middle" fill="#6b7280" fontSize="10" fontWeight="600"
-        transform={`rotate(90 ${size / 2} ${size / 2})`}>{pct}%</text>
-    </svg>
   );
 }
 
@@ -121,7 +119,7 @@ function NodeRow({
 function GroupCard({ group, onNudge, index }: { group: GroupData; onNudge: (id: string) => void; index: number }) {
   const token = useAuthStore(s => s.token);
   const [expanded, setExpanded] = useState(false);
-  const [detail, setDetail] = useState<{ path: { id: string; title: string; treeData: any } | null; progress: ProgressMap } | null>(null);
+  const [detail, setDetail] = useState<{ path: GroupPath | null; progress: ProgressMap } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const toggleExpand = async () => {
@@ -273,16 +271,22 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!token) return;
     Promise.all([
       fetch('/api/paths', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
       fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
     ]).then(([pData, bData]) => {
       if (pData) setPaths(pData.paths || []);
-      if (bData) setBuddies((bData.buddies || []).map((b: any) => ({ id: b.buddy.id, username: b.buddy.username })));
+      if (bData) setBuddies((bData.buddies || []).map((b: BuddyListItem) => ({ id: b.buddy.id, username: b.buddy.username })));
     });
-  }, []);
+  }, [token]);
 
-  const toggle = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggle = (id: string) => setSelected(prev => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
 
   const handleCreate = async () => {
     if (!name.trim() || !domain.trim()) { setError('请填写组名和领域'); return; }
@@ -358,11 +362,11 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
 export default function BuddiesPage() {
   const token = useAuthStore(s => s.token);
   const [groups, setGroups] = useState<GroupData[]>([]);
-  const [soloBuddies, setSoloBuddies] = useState<any[]>([]);
+  const [soloBuddies, setSoloBuddies] = useState<SoloBuddy[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const res = await fetch('/api/buddy-groups', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const d = await res.json();
@@ -370,9 +374,9 @@ export default function BuddiesPage() {
       setSoloBuddies(d.soloBuddies || []);
     }
     setLoading(false);
-  };
+  }, [token]);
 
-  useEffect(() => { if (token) load(); }, [token]);
+  useEffect(() => { if (token) load(); }, [load, token]);
 
   const handleNudge = async (groupId: string) => {
     await fetch(`/api/buddy-groups/${groupId}/nudge`, {
@@ -415,7 +419,7 @@ export default function BuddiesPage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 card-lift">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">未加入小组的搭子</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {soloBuddies.map((b: any, i: number) => (
+              {soloBuddies.map((b, i) => (
                 <div key={b.buddyId} className="flex items-center gap-3 p-3 rounded-xl bg-[#fef7f5] card-lift stagger-item" style={{ '--i': i } as React.CSSProperties}>
                   <Avatar username={b.buddy.username} avatarUrl={b.buddy.avatarUrl} />
                   <div className="flex-1 min-w-0">

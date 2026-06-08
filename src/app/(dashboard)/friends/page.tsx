@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
 import { useBadgeStore } from '@/stores/badges';
 import { MessageCircle, Users, Check } from 'lucide-react';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 interface UserInfo { id: string; username: string; avatarUrl: string | null; }
 interface FriendRequest { id: string; fromUser: UserInfo; createdAt: string; }
+interface NotificationItem { id: string; read: boolean; }
 
 export default function FriendsPage() {
   const token = useAuthStore(s => s.token);
@@ -19,6 +20,13 @@ export default function FriendsPage() {
   const [searchResults, setSearchResults] = useState<UserInfo[]>([]);
   const [searching, setSearching] = useState(false);
 
+  const loadData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { const d = await res.json(); setFriends(d.friends || []); setRequests(d.requests || []); }
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [token]);
+
   useEffect(() => {
     if (!token) return;
     loadData();
@@ -27,21 +35,14 @@ export default function FriendsPage() {
       .then(r => r.ok ? r.json() : null)
       .then(async (d) => {
         if (d?.notifications?.length) {
-          await Promise.all(d.notifications.filter((n: any) => !n.read).map((n: any) =>
+          await Promise.all(d.notifications.filter((n: NotificationItem) => !n.read).map((n: NotificationItem) =>
             fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: n.id }) })
           ));
           refreshBadges(token);
         }
       })
       .catch(() => {});
-  }, [token]);
-
-  const loadData = async () => {
-    try {
-      const res = await fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const d = await res.json(); setFriends(d.friends || []); setRequests(d.requests || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
-  };
+  }, [loadData, refreshBadges, token]);
 
   const handleSearch = async () => {
     if (searchQ.length < 2) return;
@@ -107,7 +108,7 @@ export default function FriendsPage() {
               {searchResults.map(u => (
                 <div key={u.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-50">
                   <div className="w-8 h-8 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm shrink-0 overflow-hidden">
-                    {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover" /> : u.username[0]?.toUpperCase()}
+                    {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover" alt="" /> : u.username[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm font-medium flex-1">{u.username}</span>
                   <button onClick={() => handleAdd(u.id)}
@@ -127,7 +128,7 @@ export default function FriendsPage() {
               {requests.map(r => (
                 <div key={r.id} className="flex items-center gap-3 py-2">
                   <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-sm shrink-0 overflow-hidden">
-                    {r.fromUser.avatarUrl ? <img src={r.fromUser.avatarUrl} className="w-full h-full object-cover" /> : r.fromUser.username[0]?.toUpperCase()}
+                    {r.fromUser.avatarUrl ? <img src={r.fromUser.avatarUrl} className="w-full h-full object-cover" alt="" /> : r.fromUser.username[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm flex-1">{r.fromUser.username}</span>
                   <button onClick={() => handleAccept(r.id)} className="text-xs px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600">接受</button>
@@ -152,7 +153,7 @@ export default function FriendsPage() {
                 <div key={f.id} className="flex items-center gap-2 py-2 px-2 rounded hover:bg-gray-50">
                   <Link href={`/profile/${f.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-[#fde8e6] flex items-center justify-center text-sm shrink-0 overflow-hidden">
-                      {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" /> : f.username[0]?.toUpperCase()}
+                      {f.avatarUrl ? <img src={f.avatarUrl} className="w-full h-full object-cover" alt="" /> : f.username[0]?.toUpperCase()}
                     </div>
                     <span className="text-sm font-medium">{f.username}</span>
                   </Link>
@@ -236,14 +237,14 @@ function BuddySection() {
   const [buddies, setBuddies] = useState<{ id: string; domain: string; buddy: { id: string; username: string } }[]>([]);
   const [buddyRequests, setBuddyRequests] = useState<{ id: string; fromUser: { username: string }; domain: string }[]>([]);
 
-  useEffect(() => { if (token) loadBuddies(); }, [token]);
-
-  const loadBuddies = async () => {
+  const loadBuddies = useCallback(async () => {
     try {
       const res = await fetch('/api/buddies', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setBuddies(d.buddies || []); setBuddyRequests(d.requests || []); }
     } catch { /* ignore */ }
-  };
+  }, [token]);
+
+  useEffect(() => { if (token) loadBuddies(); }, [loadBuddies, token]);
 
   const handleBuddyAction = async (id: string, action: string) => {
     await fetch('/api/buddies', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id, action }) });

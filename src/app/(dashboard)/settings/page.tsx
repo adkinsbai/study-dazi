@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { Check, X } from 'lucide-react';
@@ -26,16 +26,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!authReady) return; // 等认证状态恢复
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    loadApiKeys();
-  }, [user, authReady]);
-
-  const loadApiKeys = async () => {
+  const loadApiKeys = useCallback(async () => {
     try {
       const res = await fetch('/api/users/me', {
         headers: { Authorization: `Bearer ${token}` },
@@ -45,7 +36,16 @@ export default function SettingsPage() {
         setConfiguredProviders((data.apiKeys || []).map((k: { provider: string }) => k.provider));
       }
     } catch { /* ignore */ }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!authReady) return; // 等认证状态恢复
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    loadApiKeys();
+  }, [authReady, loadApiKeys, router, user]);
 
   const handleSave = async () => {
     setError('');

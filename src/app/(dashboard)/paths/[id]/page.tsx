@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
 import { TreeRenderer, type TreeNode, type ProgressMap, type NodeStatus } from '@/components/path/tree-renderer';
 import { NodeDrawer } from '@/components/path/node-drawer';
-import { Pencil, Save, Share2, Trash2, GitFork, ArrowLeft, Plus, X } from 'lucide-react';
+import { Pencil, Save, Share2, Trash2, GitFork, ArrowLeft, Plus } from 'lucide-react';
 
 interface PathData {
   id: string;
@@ -48,14 +48,7 @@ export default function PathDetailPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
 
-  // Load path + progress
-  useEffect(() => {
-    if (token && id) {
-      loadData();
-    }
-  }, [token, id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [pathRes, progRes] = await Promise.all([
         fetch(`/api/paths/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -73,7 +66,14 @@ export default function PathDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, token]);
+
+  // Load path + progress
+  useEffect(() => {
+    if (token && id) {
+      loadData();
+    }
+  }, [id, loadData, token]);
 
   const handleNodeClick = useCallback((node: TreeNode) => {
     if (editMode) {
@@ -130,7 +130,7 @@ export default function PathDetailPage() {
 
   const handleAddChild = () => {
     if (!editingNode || !path) return;
-    const newId = 'node-' + Date.now();
+    const newId = `node-${crypto.randomUUID()}`;
     const newNode: TreeNode = { id: newId, title: '新节点', description: '', estimated_hours: 1, node_type: 'required', children: [] };
     const addChild = (nodes: TreeNode[]): TreeNode[] => nodes.map(n => {
       if (n.id === editingNode.id) return { ...n, children: [...(n.children || []), newNode] };
@@ -339,6 +339,7 @@ export default function PathDetailPage() {
 
       {/* Node drawer — 仅所有者可修改进度 */}
       {!editMode && <NodeDrawer
+        key={selectedNode?.id ?? 'closed'}
         node={selectedNode}
         pathId={id}
         progressMap={progressMap}

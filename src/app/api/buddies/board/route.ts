@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
 
+interface PathTreeNode {
+  children?: PathTreeNode[];
+}
+
 // GET /api/buddies/board — 搭子看板数据
 export async function GET(req: NextRequest) {
   try {
@@ -62,7 +66,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Count total nodes per path from treeData
-    function countNodes(phases: any[]): number {
+    function countNodes(phases: PathTreeNode[]): number {
       let count = 0;
       for (const phase of phases) {
         count++;
@@ -77,7 +81,8 @@ export async function GET(req: NextRequest) {
       .map(b => {
         const buddyUser = b.fromUserId === payload.sub ? b.toUser : b.fromUser;
         const path = pathMap.get(b.sharedPathId!);
-        const totalNodes = path ? countNodes((path.treeData as any)?.phases || []) : 0;
+        const treeData = path?.treeData as { phases?: PathTreeNode[] } | null | undefined;
+        const totalNodes = treeData?.phases ? countNodes(treeData.phases) : 0;
 
         const myKey = `${payload.sub}:${b.sharedPathId}`;
         const buddyKey = `${buddyUser.id}:${b.sharedPathId}`;

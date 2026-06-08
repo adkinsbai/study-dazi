@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
               controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
               controller.close();
               return;
-            } catch (parseErr) {
+            } catch {
               // 检测是否截断，且还有重试机会
               if (isTruncatedJSON(fullText) && attempt <= MAX_RETRIES) {
                 console.warn(`[Framework] Truncated JSON detected, retrying with higher max_tokens (${currentMaxTokens} -> ${currentMaxTokens + 1500})`);
