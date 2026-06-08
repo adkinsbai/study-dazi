@@ -5,6 +5,11 @@
 
 import { getProviderConfig, type AIProviderConfig } from './ai-providers';
 
+export interface AIStreamResult {
+  stream: ReadableStream<string>;
+  getFinishReason: () => string | null;
+}
+
 export async function chatCompletion(
   provider: string,
   apiKey: string,
@@ -108,6 +113,17 @@ export async function chatCompletionStream(
   userMessage: string,
   options?: { temperature?: number; maxTokens?: number; baseUrl?: string; stop?: string[] }
 ): Promise<ReadableStream<string>> {
+  const result = await chatCompletionStreamWithMeta(provider, apiKey, systemPrompt, userMessage, options);
+  return result.stream;
+}
+
+export async function chatCompletionStreamWithMeta(
+  provider: string,
+  apiKey: string,
+  systemPrompt: string,
+  userMessage: string,
+  options?: { temperature?: number; maxTokens?: number; baseUrl?: string; stop?: string[] }
+): Promise<AIStreamResult> {
   const config = getProviderConfig(provider, options?.baseUrl);
 
   if (!config.baseUrl) {
@@ -127,7 +143,7 @@ async function chatOpenAIStream(
   config: AIProviderConfig, apiKey: string,
   systemPrompt: string, userMessage: string,
   options?: { temperature?: number; maxTokens?: number; stop?: string[] }
-): Promise<ReadableStream<string>> {
+): Promise<AIStreamResult> {
   const reqBody: Record<string, unknown> = {
     model: config.model,
     messages: [
@@ -167,40 +183,46 @@ async function chatOpenAIStream(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let finishReason: string | null = null;
 
-  return new ReadableStream<string>({
-    async pull(controller) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          controller.close();
-          return;
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          const payload = trimmed.slice(6);
-          if (payload === '[DONE]') {
+  return {
+    getFinishReason: () => finishReason,
+    stream: new ReadableStream<string>({
+      async pull(controller) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
             controller.close();
             return;
           }
-          try {
-            const json = JSON.parse(payload);
-            const content = json.choices?.[0]?.delta?.content;
-            if (content) controller.enqueue(content);
-          } catch {
-            // skip malformed lines
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            const payload = trimmed.slice(6);
+            if (payload === '[DONE]') {
+              controller.close();
+              return;
+            }
+            try {
+              const json = JSON.parse(payload);
+              const choice = json.choices?.[0];
+              if (choice?.finish_reason) finishReason = String(choice.finish_reason);
+              const content = choice?.delta?.content;
+              if (content) controller.enqueue(content);
+            } catch {
+              // skip malformed lines
+            }
           }
         }
-      }
-    },
-    cancel() {
-      reader.cancel();
-    },
-  });
+      },
+      cancel() {
+        reader.cancel();
+      },
+    }),
+  };
 }
 
 /** Anthropic 格式流式 */
@@ -208,7 +230,7 @@ async function chatAnthropicStream(
   config: AIProviderConfig, apiKey: string,
   systemPrompt: string, userMessage: string,
   options?: { temperature?: number; maxTokens?: number; stop?: string[] }
-): Promise<ReadableStream<string>> {
+): Promise<AIStreamResult> {
   const reqBody: Record<string, unknown> = {
     model: config.model,
     system: systemPrompt,
@@ -240,38 +262,45 @@ async function chatAnthropicStream(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let finishReason: string | null = null;
 
-  return new ReadableStream<string>({
-    async pull(controller) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          controller.close();
-          return;
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          try {
-            const json = JSON.parse(trimmed.slice(6));
-            if (json.type === 'content_block_delta' && json.delta?.text) {
-              controller.enqueue(json.delta.text);
+  return {
+    getFinishReason: () => finishReason,
+    stream: new ReadableStream<string>({
+      async pull(controller) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              if (json.type === 'message_delta' && json.delta?.stop_reason) {
+                finishReason = String(json.delta.stop_reason);
+              }
+              if (json.type === 'content_block_delta' && json.delta?.text) {
+                controller.enqueue(json.delta.text);
+              }
+              if (json.type === 'message_stop') {
+                controller.close();
+                return;
+              }
+            } catch {
+              // skip malformed lines
             }
-            if (json.type === 'message_stop') {
-              controller.close();
-              return;
-            }
-          } catch {
-            // skip malformed lines
           }
         }
-      }
-    },
-    cancel() {
-      reader.cancel();
-    },
-  });
+      },
+      cancel() {
+        reader.cancel();
+      },
+    }),
+  };
 }

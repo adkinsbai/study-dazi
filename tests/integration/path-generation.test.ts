@@ -8,6 +8,7 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/ai', () => ({
   chatCompletionStream: vi.fn(),
+  chatCompletionStreamWithMeta: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -22,7 +23,7 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { verifyAccessToken } from '@/lib/auth';
-import { chatCompletionStream } from '@/lib/ai';
+import { chatCompletionStreamWithMeta } from '@/lib/ai';
 import prisma from '@/lib/prisma';
 
 // --- Helpers ---
@@ -40,13 +41,27 @@ function mockAuth() {
   vi.mocked(prisma.userApiKey.findUnique).mockResolvedValue(null as never);
 }
 
-function mockAIStream(text: string) {
-  vi.mocked(chatCompletionStream).mockResolvedValue(new ReadableStream<string>({
+function createMockStream(text: string) {
+  return new ReadableStream<string>({
     start(controller) {
       controller.enqueue(text);
       controller.close();
     },
-  }));
+  });
+}
+
+function mockAIStream(text: string, finishReason: string | null = 'stop') {
+  vi.mocked(chatCompletionStreamWithMeta).mockResolvedValue({
+    stream: createMockStream(text),
+    getFinishReason: () => finishReason,
+  });
+}
+
+function mockAIStreamOnce(text: string, finishReason: string | null = 'stop') {
+  vi.mocked(chatCompletionStreamWithMeta).mockResolvedValueOnce({
+    stream: createMockStream(text),
+    getFinishReason: () => finishReason,
+  });
 }
 
 async function readSseResult(res: Response) {
@@ -100,6 +115,22 @@ describe('POST /api/paths/generate/framework', () => {
     expect(res.status).toBe(200);
     expect(data).toHaveProperty('phases');
     expect(data.phases[0].title).toBe('已包裹');
+  });
+
+  it('retries with a higher token budget when the provider reports max_tokens truncation', async () => {
+    mockAuth();
+    mockAIStreamOnce('{"phases":[{"id":"1","title":"截断"', 'length');
+    mockAIStreamOnce('{"phases":[{"id":"1","title":"重试成功","description":"d","estimated_hours":5,"is_required":true,"why":"w"}]}');
+
+    const { POST } = await import('@/app/api/paths/generate/framework/route');
+    const req = buildReq('http://localhost/api/paths/generate/framework', { domain: 'React', level: '零基础' });
+    const res = await POST(req);
+    const data = await readSseResult(res);
+
+    expect(res.status).toBe(200);
+    expect(data.phases[0].title).toBe('重试成功');
+    expect(chatCompletionStreamWithMeta).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(chatCompletionStreamWithMeta).mock.calls[1][4]).toMatchObject({ maxTokens: 3800 });
   });
 });
 

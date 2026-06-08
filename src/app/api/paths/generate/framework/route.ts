@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { chatCompletionStream } from '@/lib/ai';
-import { extractJSON, isTruncatedJSON } from '@/lib/extract-json';
 import { FRAMEWORK_PROMPT, FRAMEWORK_PROMPT_WITH_PROFILE } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
 import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
+import { sseHeaders, streamJSONGeneration } from '@/lib/stream-json-generation';
 
 const BodySchema = z.object({
   domain: z.string().min(1, '请输入想学的领域'),
@@ -72,80 +71,20 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const MAX_RETRIES = 1;
-      let attempt = 0;
-      let currentMaxTokens = maxTokens;
-
-      const stream = new ReadableStream({
-        async pull(controller) {
-          const encoder = new TextEncoder();
-
-          // 首次或重试时创建新的 AI 流
-          if (attempt === 0 || (attempt <= MAX_RETRIES)) {
-            attempt++;
-            let fullText = '';
-            let chunkCount = 0;
-
-            const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens: currentMaxTokens, baseUrl });
-            const reader = aiStream.getReader();
-
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                fullText += String(value);
-                chunkCount++;
-                controller.enqueue(
-                  encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-                );
-              }
-            } catch (e) {
-              reader.cancel();
-              throw e;
-            }
-
-            console.log(`[Framework] Attempt ${attempt} done. Chunks: ${chunkCount}, Length: ${fullText.length}`);
-
-            // 尝试解析
-            try {
-              const result = extractJSON(fullText);
-              const normalized = Array.isArray(result) ? { phases: result } : result;
-              controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-              controller.close();
-              return;
-            } catch {
-              // 检测是否截断，且还有重试机会
-              if (isTruncatedJSON(fullText) && attempt <= MAX_RETRIES) {
-                console.warn(`[Framework] Truncated JSON detected, retrying with higher max_tokens (${currentMaxTokens} -> ${currentMaxTokens + 1500})`);
-                currentMaxTokens += 1500;
-                controller.enqueue(encoder.encode(`event: retry\ndata: ${JSON.stringify({ attempt, maxTokens: currentMaxTokens })}\n\n`));
-                // pull 会被再次调用，进入下一次循环
-                return;
-              }
-              // 非截断错误或重试用尽
-              console.error('[Framework] extractJSON failed. Text length:', fullText.length);
-              console.error('[Framework] Raw text (first 500):', fullText.substring(0, 500));
-              console.error('[Framework] Raw text (last 500):', fullText.substring(Math.max(0, fullText.length - 500)));
-              controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
-              controller.close();
-              return;
-            }
-          }
-
-          // 不应该到这里
-          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '重试次数用尽' })}\n\n`));
-          controller.close();
-        },
-        cancel() {},
+      const stream = streamJSONGeneration({
+        provider,
+        apiKey,
+        systemPrompt,
+        userMessage: userMsg,
+        baseUrl,
+        initialMaxTokens: maxTokens,
+        maxRetries: 2,
+        tokenStep: body.materials ? 2500 : 1800,
+        label: 'Framework',
+        normalize: result => Array.isArray(result) ? { phases: result } : result,
       });
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
+      return new Response(stream, { headers: sseHeaders() });
     }
 
     return NextResponse.json({ error: '请使用流式模式' }, { status: 400 });

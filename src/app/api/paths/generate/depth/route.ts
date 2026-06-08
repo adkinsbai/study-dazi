@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { chatCompletionStream } from '@/lib/ai';
-import { extractJSON, isTruncatedJSON } from '@/lib/extract-json';
 import { DEPTH_PROMPT } from '@/lib/path-prompts';
 import { verifyAccessToken } from '@/lib/auth';
 import { DEFAULT_PROVIDER } from '@/lib/ai-providers';
+import { sseHeaders, streamJSONGeneration } from '@/lib/stream-json-generation';
 
 const BodySchema = z.object({
   domain: z.string().min(1),
@@ -44,58 +43,20 @@ export async function POST(req: NextRequest) {
     const wantStream = req.headers.get('X-Stream') === 'true';
 
     if (wantStream) {
-      const stream = new ReadableStream({
-        async pull(controller) {
-          const encoder = new TextEncoder();
-          let fullText = '';
-          let chunkCount = 0;
-
-          const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, {
-            maxTokens: 1500,
-            baseUrl,
-          });
-          const reader = aiStream.getReader();
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              fullText += String(value);
-              chunkCount++;
-              controller.enqueue(
-                encoder.encode(`event: progress\ndata: ${JSON.stringify({ chunks: chunkCount })}\n\n`)
-              );
-            }
-          } catch (e) {
-            reader.cancel();
-            throw e;
-          }
-
-          try {
-            const result = extractJSON(fullText);
-            const normalized = Array.isArray(result) ? { questions: result } : result;
-            controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ result: normalized })}\n\n`));
-            controller.close();
-            return;
-          } catch {
-            if (isTruncatedJSON(fullText)) {
-              controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应被截断，请重试' })}\n\n`));
-            } else {
-              controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: 'AI 响应解析失败，请重试' })}\n\n`));
-            }
-            controller.close();
-          }
-        },
-        cancel() {},
+      const stream = streamJSONGeneration({
+        provider,
+        apiKey,
+        systemPrompt,
+        userMessage: userMsg,
+        baseUrl,
+        initialMaxTokens: 1800,
+        maxRetries: 2,
+        tokenStep: 1200,
+        label: 'Depth',
+        normalize: result => Array.isArray(result) ? { questions: result } : result,
       });
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
+      return new Response(stream, { headers: sseHeaders() });
     }
 
     return NextResponse.json({ error: '请使用流式模式' }, { status: 400 });
