@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
             let fullText = '';
             let chunkCount = 0;
 
-            const aiStream = await chatCompletionStream(provider, apiKey, NODES_PROMPT, userMsg, { maxTokens: currentMaxTokens, baseUrl });
+            const systemPrompt = NODES_PROMPT.replace('{domain}', body.domain);
+            const aiStream = await chatCompletionStream(provider, apiKey, systemPrompt, userMsg, { maxTokens: currentMaxTokens, baseUrl });
             const reader = aiStream.getReader();
 
             try {

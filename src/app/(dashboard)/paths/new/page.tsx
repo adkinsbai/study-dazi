@@ -16,7 +16,7 @@ const PROVIDERS = [
   { id: 'openai-relay', name: 'GPT 中转站' },
 ] as const;
 
-type Step = 'profile' | 'subdomain' | 'intent' | 'framework' | 'nodes' | 'ready';
+type Step = 'profile' | 'subdomain' | 'depth' | 'intent' | 'framework' | 'nodes' | 'ready';
 
 interface SubDomainOption {
   id: string;
@@ -24,6 +24,12 @@ interface SubDomainOption {
   desc: string;
   difficulty: string;
   popular: boolean;
+}
+
+interface DepthQuestion {
+  id: string;
+  question: string;
+  options: string[];
 }
 
 interface Phase {
@@ -73,6 +79,14 @@ export default function NewPathPage() {
   const [subDomainProgress, setSubDomainProgress] = useState(0);
   const [subDomainProgressStatus, setSubDomainProgressStatus] = useState('');
   const [subDomainDone, setSubDomainDone] = useState(false);
+
+  // 深度追问相关状态
+  const [depthQuestions, setDepthQuestions] = useState<DepthQuestion[]>([]);
+  const [depthAnswers, setDepthAnswers] = useState<Record<string, string>>({});
+  const [depthLoading, setDepthLoading] = useState(false);
+  const [depthProgress, setDepthProgress] = useState(0);
+  const [depthProgressStatus, setDepthProgressStatus] = useState('');
+  const [depthDone, setDepthDone] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -302,11 +316,82 @@ export default function NewPathPage() {
     }
   };
 
-  // 选择细分方向后，更新 domain 并进入画像问卷
+  // 选择细分方向后，更新 domain 并进入深度追问
   const handleSelectSubDomain = (option: SubDomainOption) => {
     setSelectedSubDomain(option.name);
     setDomain(`${domain} - ${option.name}`);
     setSubDomainDone(true);
+    handleGenerateDepth(option.name);
+  };
+
+  // 生成深度追问
+  const handleGenerateDepth = async (subdomainName?: string) => {
+    const sub = subdomainName || selectedSubDomain;
+    if (!sub) { setDepthDone(true); setStep('profile'); return; }
+
+    setError('');
+    setDepthLoading(true);
+    setDepthProgress(5);
+    setDepthProgressStatus('正在生成追问...');
+    setStep('depth');
+
+    try {
+      // 从 domain 中提取原始领域（去掉已拼接的细分方向）
+      const baseDomain = domain.includes(' - ') ? domain.split(' - ')[0] : domain;
+      const res = await fetch('/api/paths/generate/depth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'X-Stream': 'true',
+        },
+        body: JSON.stringify({ domain: baseDomain, subdomain: sub, provider }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || '生成失败');
+      }
+      const result = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 80 * 90));
+        setDepthProgress(pct);
+        setDepthProgressStatus(`AI 正在分析... (${chunks} tokens)`);
+      }) as { questions?: DepthQuestion[] };
+      setDepthProgress(100);
+      setDepthProgressStatus('完成！');
+
+      const questions = (result.questions || []).map(q => ({ ...q, id: String(q.id) })) as DepthQuestion[];
+      if (questions.length === 0) {
+        setDepthDone(true);
+        setStep('profile');
+      } else {
+        setDepthQuestions(questions);
+        setDepthAnswers({});
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '分析失败');
+      // 失败时跳过深度追问
+      setDepthDone(true);
+      setStep('profile');
+    } finally {
+      setDepthLoading(false);
+    }
+  };
+
+  // 确认深度选择
+  const handleConfirmDepth = () => {
+    // 把答案拼接到 domain 中，让后续 prompt 有上下文
+    const answerSummary = Object.entries(depthAnswers)
+      .map(([qId, answer]) => {
+        const q = depthQuestions.find(q => q.id === qId);
+        return q ? `${q.question} → ${answer}` : '';
+      })
+      .filter(Boolean)
+      .join('; ');
+
+    if (answerSummary) {
+      setDomain(prev => `${prev} [${answerSummary}]`);
+    }
+    setDepthDone(true);
     setStep('profile');
   };
 
@@ -614,6 +699,74 @@ export default function NewPathPage() {
                 <span className="inline-flex items-center gap-1"><ArrowLeft size={14} /> 返回</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Step 0.6: 深度追问 */}
+        {step === 'depth' && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold">
+              你想学多深？
+            </h2>
+            <p className="text-sm text-gray-500">
+              已选方向：<span className="font-medium text-[#f97066]">{selectedSubDomain}</span>
+            </p>
+
+            {depthLoading && (
+              <div className="bg-[#fef4f3] rounded-lg p-4">
+                <ProgressBar progress={depthProgress} status={depthProgressStatus || 'AI 正在生成追问...'} />
+              </div>
+            )}
+
+            {depthQuestions.length > 0 && !depthLoading && (
+              <div className="space-y-5">
+                {depthQuestions.map((q, qi) => (
+                  <div key={q.id} className="space-y-2">
+                    <p className="text-sm font-medium text-gray-800">
+                      <span className="text-[#f97066] mr-1">Q{qi + 1}.</span>
+                      {q.question}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {q.options.map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setDepthAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                            depthAnswers[q.id] === opt
+                              ? 'bg-[#f97066] text-white border-[#f97066]'
+                              : 'border-gray-200 text-gray-600 hover:border-[#f97066] hover:text-[#f97066]'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => { setDepthDone(true); setStep('profile'); }}
+                    className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    跳过
+                  </button>
+                  <button
+                    onClick={handleConfirmDepth}
+                    disabled={Object.keys(depthAnswers).length === 0}
+                    className="flex-1 rounded-md bg-[#f97066] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50 transition-colors"
+                  >
+                    确认选择 ({Object.keys(depthAnswers).length}/{depthQuestions.length})
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!depthLoading && depthQuestions.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-400">正在准备追问...</p>
+              </div>
+            )}
           </div>
         )}
 
