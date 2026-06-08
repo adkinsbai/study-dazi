@@ -50,3 +50,7 @@ next-env.d.ts
 python-converter/
 .plan.md
 fix-rls.sql
+
+# agent configs
+.agents/
+.codex/
