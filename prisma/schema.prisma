@@ -344,3 +344,382 @@ model NodeResource {
   @@index([pathId, nodeId])
   @@map("node_resources")
 }
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum QuestionType {
+  single_choice
+  multi_choice
+  fill_blank
+  short_answer
+  coding
+  true_false
+}
+
+enum TestType {
+  test
+  homework
+  exam
+  review
+}
+
+enum TestSessionStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum ProjectDifficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum SubmissionStatus {
+  submitted
+  reviewed
+  rejected
+}
+
+enum ProblemDifficulty {
+  easy
+  medium
+  hard
+}
+
+enum AttemptStatus {
+  pending
+  accepted
+  wrong_answer
+  time_limit
+  runtime_error
+  compilation_error
+}
+
+enum ProblemSource {
+  leetcode
+  codeforces
+  luogu
+  other
+}
+
+enum CompanyTestSource {
+  nowcoder
+  leetcode
+  saiding
+  other
+}
+
+enum InterviewRound {
+  general
+  technical
+  behavioral
+  system_design
+}
+
+enum InterviewStatus {
+  in_progress
+  completed
+}
+
+// ============================================================
+// Question & Test Models
+// ============================================================
+
+model QuestionBank {
+  id          String       @id @default(uuid())
+  pathId      String?      @map("path_id")
+  nodeId      String?      @map("node_id")
+  domain      String
+  type        QuestionType
+  difficulty  Int          // 1-5
+  title       String
+  content     Json
+  answer      String
+  explanation String?
+  tags        Json         @default("[]")
+  source      String       @default("ai")
+  aiGenerated Boolean      @default(true) @map("ai_generated")
+  confidence  Float?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  answers          UserAnswer[]
+  sessionQuestions TestSessionQuestion[]
+
+  @@index([domain, difficulty])
+  @@index([nodeId])
+  @@map("question_bank")
+}
+
+model UserAnswer {
+  id         String        @id @default(uuid())
+  userId     String        @map("user_id")
+  questionId String        @map("question_id")
+  answer     String
+  isCorrect  Boolean?      @map("is_correct")
+  score      Int?
+  feedback   String?
+  timeSpent  Int?          @map("time_spent")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question QuestionBank @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_answers")
+}
+
+model TestSession {
+  id             String            @id @default(uuid())
+  userId         String            @map("user_id")
+  pathId         String?           @map("path_id")
+  nodeId         String?           @map("node_id")
+  type           TestType
+  title          String
+  totalQuestions  Int              @map("total_questions")
+  correctCount   Int              @default(0) @map("correct_count")
+  score          Int?
+  duration       Int?
+  status         TestSessionStatus @default(in_progress)
+  startedAt      DateTime          @default(now()) @map("started_at")
+  completedAt    DateTime?         @map("completed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path      LearningPath?         @relation(fields: [pathId], references: [id], onDelete: SetNull)
+  questions TestSessionQuestion[]
+
+  @@index([userId, type, createdAt(sort: Desc)])
+  @@map("test_sessions")
+}
+
+model TestSessionQuestion {
+  id           String  @id @default(uuid())
+  sessionId    String  @map("session_id")
+  questionId   String  @map("question_id")
+  userAnswerId String? @map("user_answer_id")
+  order        Int
+  isCorrect    Boolean? @map("is_correct")
+
+  session  TestSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question QuestionBank @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("test_session_questions")
+}
+
+// ============================================================
+// Project Models
+// ============================================================
+
+model ProjectTemplate {
+  id                String            @id @default(uuid())
+  pathId            String?           @map("path_id")
+  nodeId            String?           @map("node_id")
+  domain            String
+  title             String
+  description       String
+  requirements      Json
+  difficulty        ProjectDifficulty
+  estimatedHours    Int?              @map("estimated_hours")
+  techStack         Json              @default("[]") @map("tech_stack")
+  hints             Json              @default("[]")
+  evaluationCriteria Json             @default("[]") @map("evaluation_criteria")
+  resources         Json              @default("[]")
+  aiGenerated       Boolean           @default(true) @map("ai_generated")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  submissions ProjectSubmission[]
+
+  @@index([domain, difficulty])
+  @@map("project_templates")
+}
+
+model ProjectSubmission {
+  id           String           @id @default(uuid())
+  userId       String           @map("user_id")
+  projectId    String           @map("project_id")
+  content      String
+  repoUrl      String?          @map("repo_url")
+  demoUrl      String?          @map("demo_url")
+  score        Int?
+  feedback     String?
+  aiEvaluation Json?            @map("ai_evaluation")
+  status       SubmissionStatus @default(submitted)
+  submittedAt  DateTime         @default(now()) @map("submitted_at")
+  reviewedAt   DateTime?        @map("reviewed_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project ProjectTemplate @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, submittedAt(sort: Desc)])
+  @@map("project_submissions")
+}
+
+// ============================================================
+// Coding Problem Models
+// ============================================================
+
+model CodingProblem {
+  id             String           @id @default(uuid())
+  externalSource ProblemSource?   @map("external_source")
+  externalId     String?          @map("external_id")
+  title          String
+  description    String
+  difficulty     ProblemDifficulty
+  tags           Json             @default("[]")
+  examples       Json             @default("[]")
+  constraints    String?
+  solution       String?
+  hints          Json             @default("[]")
+  acceptanceRate Float?           @map("acceptance_rate")
+  isPremium      Boolean          @default(false) @map("is_premium")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  attempts     UserCodingAttempt[]
+  companyTests CompanyTestProblem[]
+
+  @@index([difficulty])
+  @@index([externalSource])
+  @@map("coding_problems")
+}
+
+model UserCodingAttempt {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id")
+  problemId       String       @map("problem_id")
+  language        String
+  code            String
+  status          AttemptStatus @default(pending)
+  runtime         Int?
+  memory          Int?
+  testCasesPassed Int?         @map("test_cases_passed")
+  totalTestCases  Int?         @map("total_test_cases")
+  submittedAt     DateTime     @default(now()) @map("submitted_at")
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem CodingProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, submittedAt(sort: Desc)])
+  @@map("user_coding_attempts")
+}
+
+// ============================================================
+// Company Test Models
+// ============================================================
+
+model CompanyTest {
+  id            String            @id @default(uuid())
+  company       String
+  year          Int
+  position      String
+  source        CompanyTestSource
+  url           String?
+  difficulty    Int?
+  questionCount Int               @default(0) @map("question_count")
+  tags          Json              @default("[]")
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  problems CompanyTestProblem[]
+
+  @@index([company, year])
+  @@map("company_tests")
+}
+
+model CompanyTestProblem {
+  id         String  @id @default(uuid())
+  testId     String  @map("test_id")
+  problemId  String? @map("problem_id")
+  questionId String? @map("question_id")
+  order      Int     @default(0)
+
+  test    CompanyTest    @relation(fields: [testId], references: [id], onDelete: Cascade)
+  problem CodingProblem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+
+  @@index([testId])
+  @@map("company_test_problems")
+}
+
+// ============================================================
+// Interview Models
+// ============================================================
+
+model InterviewSession {
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  pathId          String?         @map("path_id")
+  domain          String
+  position        String
+  round           InterviewRound  @default(general)
+  language        String          @default("zh")
+  difficulty      Int             @default(3)
+  overallFeedback String?         @map("overall_feedback")
+  score           Int?
+  duration        Int?
+  status          InterviewStatus @default(in_progress)
+  startedAt       DateTime        @default(now()) @map("started_at")
+  completedAt     DateTime?       @map("completed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions InterviewQuestion[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("interview_sessions")
+}
+
+model InterviewQuestion {
+  id         String    @id @default(uuid())
+  sessionId  String    @map("session_id")
+  order      Int
+  question   String
+  answer     String?
+  evaluation String?
+  score      Int?
+  isCorrect  Boolean?  @map("is_correct")
+  hints      String?
+  difficulty Int?
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("interview_questions")
+}
+
+// ============================================================
+// Resource Chunk & Bookmark Models
+// ============================================================
+
+model ResourceChunk {
+  id         String   @id @default(uuid())
+  resourceId String   @map("resource_id")
+  content    String
+  startTime  Int?     @map("start_time")
+  endTime    Int?     @map("end_time")
+  language   String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  resource ResourceIndex @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, startTime])
+  @@map("resource_chunks")
+}
+
+model UserBookmark {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  resourceId String?  @map("resource_id")
+  chunkId    String?  @map("chunk_id")
+  questionId String?  @map("question_id")
+  problemId  String?  @map("problem_id")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_bookmarks")
+}
