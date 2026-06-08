@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth';
-import { X, Check, Flame, Bookmark, Play, PartyPopper, RotateCcw, Clock, ExternalLink, Youtube, Monitor } from 'lucide-react';
+import { X, Check, Flame, Bookmark, Play, PartyPopper, RotateCcw, Clock, ExternalLink } from 'lucide-react';
 import type { TreeNode, NodeStatus, ProgressMap } from './tree-renderer';
 
 interface NodeDrawerProps {

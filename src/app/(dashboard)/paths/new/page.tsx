@@ -16,7 +16,15 @@ const PROVIDERS = [
   { id: 'openai-relay', name: 'GPT 中转站' },
 ] as const;
 
-type Step = 'profile' | 'intent' | 'framework' | 'nodes' | 'ready';
+type Step = 'profile' | 'subdomain' | 'intent' | 'framework' | 'nodes' | 'ready';
+
+interface SubDomainOption {
+  id: string;
+  name: string;
+  desc: string;
+  difficulty: string;
+  popular: boolean;
+}
 
 interface Phase {
   id: string;
@@ -57,6 +65,14 @@ export default function NewPathPage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileProgress, setProfileProgress] = useState(0);
   const [profileProgressStatus, setProfileProgressStatus] = useState('');
+
+  // 细分方向相关状态
+  const [subDomainOptions, setSubDomainOptions] = useState<SubDomainOption[]>([]);
+  const [selectedSubDomain, setSelectedSubDomain] = useState<string>('');
+  const [subDomainLoading, setSubDomainLoading] = useState(false);
+  const [subDomainProgress, setSubDomainProgress] = useState(0);
+  const [subDomainProgressStatus, setSubDomainProgressStatus] = useState('');
+  const [subDomainDone, setSubDomainDone] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -236,6 +252,62 @@ export default function NewPathPage() {
     } finally {
       setProfileLoading(false);
     }
+  };
+
+  // 生成细分方向
+  const handleGenerateSubDomains = async () => {
+    if (!domain.trim()) {
+      setError('请先填写学习领域');
+      return;
+    }
+    setError('');
+    setSubDomainLoading(true);
+    setSubDomainProgress(5);
+    setSubDomainProgressStatus('正在分析领域...');
+    try {
+      const res = await fetch('/api/paths/generate/subdomains', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'X-Stream': 'true',
+        },
+        body: JSON.stringify({ domain: domain.trim(), provider }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || '生成失败');
+      }
+      const result = await consumeSSE(res, (chunks) => {
+        const pct = Math.min(95, Math.round(5 + chunks / 80 * 90));
+        setSubDomainProgress(pct);
+        setSubDomainProgressStatus(`AI 正在分析... (${chunks} tokens)`);
+      }) as { options?: SubDomainOption[] };
+      setSubDomainProgress(100);
+      setSubDomainProgressStatus('完成！');
+      const options = (result.options || []).map(o => ({ ...o, id: String(o.id) })) as SubDomainOption[];
+      if (options.length === 0) {
+        // 如果AI没有返回细分方向，跳过这步直接进画像
+        setStep('profile');
+      } else {
+        setSubDomainOptions(options);
+        setStep('subdomain');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '分析失败');
+      setSubDomainProgress(0);
+      setSubDomainProgressStatus('');
+    } finally {
+      setSubDomainLoading(false);
+    }
+  };
+
+  // 选择细分方向后，更新 domain 并进入画像问卷
+  const handleSelectSubDomain = (option: SubDomainOption) => {
+    setSelectedSubDomain(option.name);
+    setDomain(`${domain} - ${option.name}`);
+    setSubDomainDone(true);
+    setStep('profile');
   };
 
   const handleGenerateFramework = async () => {
@@ -485,6 +557,66 @@ export default function NewPathPage() {
           </div>
         )}
 
+        {/* Step 0.5: 细分方向选择 */}
+        {step === 'subdomain' && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold">
+              「{domain}」有哪些细分方向？
+            </h2>
+            <p className="text-sm text-gray-500">选择一个你最感兴趣的方向，AI 会为你定制更精准的学习路径</p>
+
+            {subDomainLoading && (
+              <div className="bg-[#fef4f3] rounded-lg p-4">
+                <ProgressBar progress={subDomainProgress} status={subDomainProgressStatus || 'AI 正在分析细分方向...'} />
+              </div>
+            )}
+
+            {subDomainOptions.length > 0 && (
+              <div className="space-y-3">
+                {subDomainOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => handleSelectSubDomain(opt)}
+                    className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-[#f97066] hover:bg-[#fef4f3] transition-all group"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-gray-900 group-hover:text-[#e0524a]">{opt.name}</span>
+                      {opt.popular && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#fde8e6] text-[#e0524a] font-medium">热门</span>
+                      )}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        opt.difficulty === '简单' ? 'bg-green-50 text-green-600' :
+                        opt.difficulty === '中等' ? 'bg-amber-50 text-amber-600' :
+                        opt.difficulty === '较难' ? 'bg-orange-50 text-orange-600' :
+                        'bg-red-50 text-red-600'
+                      }`}>
+                        {opt.difficulty}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{opt.desc}</p>
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => { setSelectedSubDomain(''); setSubDomainDone(true); setStep('profile'); }}
+                  className="w-full text-center py-3 text-sm text-gray-400 hover:text-gray-600 border border-dashed border-gray-200 rounded-xl hover:border-gray-300 transition-colors"
+                >
+                  跳过，我还没想好具体方向
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setStep('profile')}
+                className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <span className="inline-flex items-center gap-1"><ArrowLeft size={14} /> 返回</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: 用户画像问卷 */}
         {step === 'profile' && !userProfile && (
           <div>
@@ -531,14 +663,28 @@ export default function NewPathPage() {
                   type="text"
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
-                  placeholder="如：前端开发、Python、UI 设计"
+                  placeholder="如：前端开发、模拟IC设计、Python"
                   className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#f97066] focus:ring-1 focus:ring-[#f97066]"
                 />
               </div>
+
+              {domain.trim() && (
+                <button
+                  onClick={handleGenerateSubDomains}
+                  disabled={subDomainLoading || !configuredProviders.includes(provider)}
+                  className="w-full mt-3 rounded-lg bg-[#f97066] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#e0524a] disabled:opacity-50 transition-colors"
+                >
+                  {subDomainLoading ? (
+                    <span className="inline-flex items-center gap-1"><Loader2 size={14} className="animate-spin" /> AI 正在分析...</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1"><Sparkles size={14} /> AI 分析细分方向</span>
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* 用户画像问卷 */}
-            {domain.trim() && (
+            {/* 用户画像问卷（选择了细分方向后或跳过后显示） */}
+            {domain.trim() && subDomainDone && (
               <UserProfileForm
                 domain={domain}
                 onSubmit={handleGenerateProfile}
