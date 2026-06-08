@@ -83,6 +83,12 @@ export function streamJSONGeneration(options: StreamJSONGenerationOptions): Read
             if (lengthLimited || isTruncatedJSON(fullText)) {
               throw new Error('AI 响应达到 max_tokens 上限');
             }
+            // 非截断的 JSON 解析失败（如 AI 返回了解释文字），也应重试
+            if (attempt <= maxRetries) {
+              console.warn(`[${options.label}] JSON parse failed (not truncated), retrying attempt ${attempt + 1}`);
+              sendSse(controller, 'retry', { attempt, maxTokens, reason: 'json_parse_failed' });
+              continue;
+            }
             throw parseError;
           }
         } catch (err) {

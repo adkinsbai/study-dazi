@@ -8,13 +8,19 @@ export function extractJSON(raw: string): object {
 
   const start = raw.indexOf('{');
   if (start !== -1) {
-    // 用括号计数找到匹配的 }，而非 lastIndexOf
-    // 避免 AI 在 JSON 后面追加文字时匹配到错误的 }
+    // 用括号计数找到匹配的 }，感知字符串字面量避免误判
     let depth = 0;
     let end = -1;
+    let inString = false;
+    let escape = false;
     for (let i = start; i < raw.length; i++) {
-      if (raw[i] === '{') depth++;
-      else if (raw[i] === '}') depth--;
+      const ch = raw[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
       if (depth === 0) { end = i; break; }
     }
     if (end > start) {
@@ -27,9 +33,16 @@ export function extractJSON(raw: string): object {
   if (arrStart !== -1) {
     let depth = 0;
     let arrEnd = -1;
+    let inString = false;
+    let escape = false;
     for (let i = arrStart; i < raw.length; i++) {
-      if (raw[i] === '[') depth++;
-      else if (raw[i] === ']') depth--;
+      const ch = raw[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '[') depth++;
+      else if (ch === ']') depth--;
       if (depth === 0) { arrEnd = i; break; }
     }
     if (arrEnd > arrStart) {
