@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import Link from 'next/link';
 import { TreeRenderer, type TreeNode, type ProgressMap, type NodeStatus } from '@/components/path/tree-renderer';
 import { NodeDrawer } from '@/components/path/node-drawer';
+import { DailyTasks } from '@/components/path/daily-tasks';
 import { Pencil, Save, Share2, Trash2, GitFork, ArrowLeft, Plus } from 'lucide-react';
 
 interface PathData {
@@ -289,6 +290,10 @@ export default function PathDetailPage() {
             <Pencil size={14} className="inline mr-1" /> 编辑模式：点击节点修改，修改后记得保存
           </div>
         )}
+
+        {/* 每日学习任务 */}
+        <DailyTasks pathId={id} />
+
         <div className="bg-white rounded-2xl border border-gray-100 p-6 card-lift">
           {phases.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
