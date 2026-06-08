@@ -30,8 +30,8 @@ export async function GET(
     if (!path) return NextResponse.json({ error: '路径不存在' }, { status: 404 });
 
     // 获取所有进度
-    const allProgress = await prisma.nodeProgress.findMany({
-      where: { pathId: id },
+    const allProgress = await prisma.userNodeProgress.findMany({
+      where: { pathId: id, userId: payload.sub },
     });
 
     const progressMap: Record<string, { status: string; notes: string }> = {};
@@ -74,7 +74,7 @@ export async function GET(
       const nextNode = allNodes.find(n => !progressMap[n.id] || progressMap[n.id].status === 'unlocked');
       if (nextNode) {
         // 创建进度记录
-        await prisma.nodeProgress.create({
+        await prisma.userNodeProgress.create({
           data: {
             pathId: id,
             nodeId: nextNode.id,
