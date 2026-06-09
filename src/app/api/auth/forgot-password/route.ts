@@ -3,6 +3,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const ForgotSchema = z.object({
   email: z.string().email(),
@@ -10,6 +11,16 @@ const ForgotSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // 速率限制：同一 IP 15 分钟最多 5 次
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = checkRateLimit(`forgot-pwd:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `请求过于频繁，请 ${rl.retryAfterSec} 秒后重试` },
+        { status: 429 },
+      );
+    }
+
     const body = ForgotSchema.parse(await req.json());
 
     const user = await prisma.user.findUnique({ where: { email: body.email } });

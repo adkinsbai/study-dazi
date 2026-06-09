@@ -15,6 +15,11 @@ export async function POST(
     const template = await prisma.learningPath.findUnique({ where: { id } });
     if (!template) return NextResponse.json({ error: '模板不存在' }, { status: 404 });
 
+    // 只能 fork 公开路径、模板、或自己的路径
+    if (!template.isPublic && !template.isTemplate && template.userId !== payload.sub) {
+      return NextResponse.json({ error: '无权 fork 该路径' }, { status: 403 });
+    }
+
     const forked = await prisma.learningPath.create({
       data: {
         userId: payload.sub,

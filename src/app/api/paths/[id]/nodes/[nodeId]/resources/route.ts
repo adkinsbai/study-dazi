@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { authenticate } from '@/lib/auth';
 
 /**
  * GET /api/paths/[id]/nodes/[nodeId]/resources
- * 获取某个节点关联的学习资源列表
+ * 获取某个节点关联的学习资源列表（公开路径无需认证）
  */
 export async function GET(
   req: NextRequest,
@@ -12,12 +13,22 @@ export async function GET(
   try {
     const { id, nodeId } = await params;
 
-    // 查找节点关联的资源
+    // 检查路径是否公开
+    const path = await prisma.learningPath.findUnique({
+      where: { id },
+      select: { isPublic: true, isTemplate: true },
+    });
+    if (!path) return NextResponse.json({ error: '路径不存在' }, { status: 404 });
+
+    // 私有路径需要认证
+    if (!path.isPublic && !path.isTemplate) {
+      const authResult = await authenticate(req);
+      if (authResult instanceof NextResponse) return authResult;
+    }
+
     const links = await prisma.nodeResource.findMany({
       where: { pathId: id, nodeId },
-      include: {
-        resource: true,
-      },
+      include: { resource: true },
       orderBy: { relevance: 'desc' },
     });
 
@@ -48,7 +59,7 @@ export async function GET(
 
 /**
  * POST /api/paths/[id]/nodes/[nodeId]/resources
- * 手动为节点关联资源
+ * 手动为节点关联资源（必须认证 + 路径所有权）
  * Body: { resourceId: string }
  */
 export async function POST(
@@ -56,11 +67,21 @@ export async function POST(
   { params }: { params: Promise<{ id: string; nodeId: string }> },
 ) {
   try {
+    const authResult = await authenticate(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { id, nodeId } = await params;
     const body = await req.json();
 
     if (!body.resourceId) {
       return NextResponse.json({ error: '缺少 resourceId' }, { status: 400 });
+    }
+
+    // 检查路径所有权
+    const path = await prisma.learningPath.findUnique({ where: { id } });
+    if (!path) return NextResponse.json({ error: '路径不存在' }, { status: 404 });
+    if (path.userId !== authResult.sub) {
+      return NextResponse.json({ error: '无权操作该路径' }, { status: 403 });
     }
 
     const link = await prisma.nodeResource.create({

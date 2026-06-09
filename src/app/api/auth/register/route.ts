@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { sendVerificationCode } from '@/lib/email';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const RegisterSchema = z.object({
   username: z
@@ -21,6 +22,16 @@ const RegisterSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // 速率限制：同一 IP 15 分钟最多 5 次注册
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rl = checkRateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: `注册请求过于频繁，请 ${rl.retryAfterSec} 秒后重试` },
+        { status: 429 },
+      );
+    }
+
     const body = RegisterSchema.parse(await req.json());
 
     // 清理过期未验证的旧账号（避免验证码永久残留在 DB）
@@ -81,10 +92,16 @@ export async function POST(req: NextRequest) {
       // Resend 失败则降级为页面显示
     }
 
+    if (!emailSent) {
+      return NextResponse.json({
+        success: false,
+        message: '验证码发送失败，请稍后重试或点击"重新发送"',
+      }, { status: 502 });
+    }
+
     return NextResponse.json({
       success: true,
-      message: emailSent ? `验证码已发送至 ${body.email}` : `验证码：${code}`,
-      code: emailSent ? undefined : code,
+      message: `验证码已发送至 ${body.email}`,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {

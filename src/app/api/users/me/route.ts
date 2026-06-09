@@ -100,7 +100,13 @@ export async function PATCH(req: NextRequest) {
       }
       data.deepseekApiKey = body.deepseekApiKey;
     }
-    if (body.username) data.username = body.username;
+    if (body.username) {
+      const existing = await prisma.user.findUnique({ where: { username: body.username } });
+      if (existing && existing.id !== payload.sub) {
+        return NextResponse.json({ error: '该用户名已被使用' }, { status: 409 });
+      }
+      data.username = body.username;
+    }
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null;
     if (body.bio !== undefined) data.bio = body.bio || null;
 

@@ -46,13 +46,19 @@ export async function POST(req: NextRequest) {
       await sendVerificationCode(email, code);
       emailSent = true;
     } catch {
-      // Resend failed, fallback to showing code
+      // Resend failed
+    }
+
+    if (!emailSent) {
+      return NextResponse.json({
+        success: false,
+        message: '验证码发送失败，请稍后重试',
+      }, { status: 502 });
     }
 
     return NextResponse.json({
       success: true,
-      message: emailSent ? `验证码已重新发送至 ${email}` : `验证码：${code}`,
-      code: emailSent ? undefined : code,
+      message: `验证码已重新发送至 ${email}`,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {

@@ -19,6 +19,12 @@ export async function POST(
     });
     if (!group) return NextResponse.json({ error: '小组不存在' }, { status: 404 });
 
+    // 检查当前用户是否是小组成员
+    const isMember = group.members.some(m => m.userId === payload.sub);
+    if (!isMember) {
+      return NextResponse.json({ error: '你不是该小组成员' }, { status: 403 });
+    }
+
     const fromUser = await prisma.user.findUnique({ where: { id: payload.sub }, select: { username: true } });
 
     // Notify all members except sender

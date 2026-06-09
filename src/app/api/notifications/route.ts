@@ -36,6 +36,11 @@ export async function PATCH(req: NextRequest) {
     const { id } = await req.json();
 
     if (id) {
+      // 检查通知所有权
+      const notif = await prisma.notification.findUnique({ where: { id } });
+      if (!notif || notif.userId !== payload.sub) {
+        return NextResponse.json({ error: '无权操作该通知' }, { status: 403 });
+      }
       await prisma.notification.update({ where: { id }, data: { read: true } });
     } else {
       await prisma.notification.updateMany({ where: { userId: payload.sub, read: false }, data: { read: true } });
