@@ -10,6 +10,14 @@ export interface AIStreamResult {
   getFinishReason: () => string | null;
 }
 
+// ── 超时策略 ──────────────────────────────────────────────────────────
+// 连接超时：建立连接的最长时间（服务器完全无响应）
+const CONNECT_TIMEOUT_MS = 30_000;
+// 闲置超时：收到最后一个 chunk 后的等待时间（AI 还在思考但没输出）
+const IDLE_TIMEOUT_MS = 90_000;
+// 非流式总超时：简单兜底
+const REQUEST_TIMEOUT_MS = 300_000;
+
 export async function chatCompletion(
   provider: string,
   apiKey: string,
@@ -31,8 +39,6 @@ export async function chatCompletion(
   return chatOpenAI(config.baseUrl, apiKey, config.model, systemPrompt, userMessage, options);
 }
 
-const FETCH_TIMEOUT_MS = 120_000; // 2 分钟超时
-
 /** OpenAI 兼容格式: POST /chat/completions */
 async function chatOpenAI(
   baseUrl: string, apiKey: string, model: string,
@@ -40,42 +46,42 @@ async function chatOpenAI(
   options?: { temperature?: number; maxTokens?: number }
 ): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      temperature: options?.temperature ?? 0.1,
-      max_tokens: options?.maxTokens ?? 2048,
-    }),
-    signal: controller.signal,
-  });
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: options?.temperature ?? 0.1,
+        max_tokens: options?.maxTokens ?? 2048,
+      }),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    let msg = `API error: ${res.status}`;
-    try {
-      const err = JSON.parse(text);
-      msg = err.error?.message || err.message || msg;
-    } catch {
-      if (text) msg = `${msg} — ${text.slice(0, 200)}`;
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let msg = `API error: ${res.status}`;
+      try {
+        const err = JSON.parse(text);
+        msg = err.error?.message || err.message || msg;
+      } catch {
+        if (text) msg = `${msg} — ${text.slice(0, 200)}`;
+      }
+      throw new Error(msg);
     }
-    throw new Error(msg);
-  }
 
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('AI 返回了空响应，请重试');
-  return content;
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('AI 返回了空响应，请重试');
+    return content;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -88,42 +94,62 @@ async function chatAnthropic(
   options?: { temperature?: number; maxTokens?: number }
 ): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-  const res = await fetch(`${baseUrl}/v1/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      system: systemPrompt,
-      messages: [
-        { role: 'user', content: userMessage },
-      ],
-      temperature: options?.temperature ?? 0.1,
-      max_tokens: options?.maxTokens ?? 2048,
-    }),
-    signal: controller.signal,
-  });
+    const res = await fetch(`${baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: userMessage },
+        ],
+        temperature: options?.temperature ?? 0.1,
+        max_tokens: options?.maxTokens ?? 2048,
+      }),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API error: ${res.status}`);
-  }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error: ${res.status}`);
+    }
 
-  const data = await res.json();
-  const text = data.content?.[0]?.text;
-  if (!text) throw new Error('AI 返回了空响应，请重试');
-  return text;
+    const data = await res.json();
+    const text = data.content?.[0]?.text;
+    if (!text) throw new Error('AI 返回了空响应，请重试');
+    return text;
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
 // ── 流式调用 ──────────────────────────────────────────────────────────
+
+/**
+ * 创建一个闲置超时控制器
+ * 每次调用 touch() 重置计时器，只要还在产出内容就不会超时
+ */
+function createIdleTimeout(ms: number, onTimeout: () => void) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return {
+    start() {
+      timer = setTimeout(onTimeout, ms);
+    },
+    touch() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(onTimeout, ms);
+    },
+    clear() {
+      if (timer) clearTimeout(timer);
+    },
+  };
+}
 
 /** 流式调用 AI，返回逐 token 的 ReadableStream */
 export async function chatCompletionStream(
@@ -176,8 +202,9 @@ async function chatOpenAIStream(
   };
   if (options?.stop) reqBody.stop = options.stop;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  // 连接超时：30s 内必须建立连接
+  const connectController = new AbortController();
+  const connectTimer = setTimeout(() => connectController.abort(), CONNECT_TIMEOUT_MS);
 
   const res = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',
@@ -186,11 +213,12 @@ async function chatOpenAIStream(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(reqBody),
-    signal: controller.signal,
+    signal: connectController.signal,
   });
 
+  clearTimeout(connectTimer);
+
   if (!res.ok) {
-    clearTimeout(timeoutId);
     const text = await res.text().catch(() => '');
     let msg = `API error: ${res.status}`;
     try {
@@ -202,8 +230,6 @@ async function chatOpenAIStream(
     throw new Error(msg);
   }
 
-  clearTimeout(timeoutId);
-
   const body = res.body;
   if (!body) throw new Error('No response body');
 
@@ -211,14 +237,19 @@ async function chatOpenAIStream(
   const decoder = new TextDecoder();
   let buffer = '';
   let finishReason: string | null = null;
+  const idleTimer = createIdleTimeout(IDLE_TIMEOUT_MS, () => reader.cancel());
 
   return {
     getFinishReason: () => finishReason,
     stream: new ReadableStream<string>({
+      start() {
+        idleTimer.start();
+      },
       async pull(controller) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
+            idleTimer.clear();
             // 处理 buffer 中残留的最后一段数据
             if (buffer.trim()) {
               const lines = buffer.split('\n');
@@ -241,6 +272,8 @@ async function chatOpenAIStream(
             controller.close();
             return;
           }
+          // 收到数据，重置闲置超时
+          idleTimer.touch();
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
@@ -249,6 +282,7 @@ async function chatOpenAIStream(
             if (!trimmed || !trimmed.startsWith('data: ')) continue;
             const payload = trimmed.slice(6);
             if (payload === '[DONE]') {
+              idleTimer.clear();
               controller.close();
               return;
             }
@@ -265,6 +299,7 @@ async function chatOpenAIStream(
         }
       },
       cancel() {
+        idleTimer.clear();
         reader.cancel();
       },
     }),
@@ -287,8 +322,9 @@ async function chatAnthropicStream(
   };
   if (options?.stop) reqBody.stop_sequences = options.stop;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  // 连接超时：30s 内必须建立连接
+  const connectController = new AbortController();
+  const connectTimer = setTimeout(() => connectController.abort(), CONNECT_TIMEOUT_MS);
 
   const res = await fetch(`${config.baseUrl}/v1/messages`, {
     method: 'POST',
@@ -298,16 +334,15 @@ async function chatAnthropicStream(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(reqBody),
-    signal: controller.signal,
+    signal: connectController.signal,
   });
 
+  clearTimeout(connectTimer);
+
   if (!res.ok) {
-    clearTimeout(timeoutId);
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message || `API error: ${res.status}`);
   }
-
-  clearTimeout(timeoutId);
 
   const body = res.body;
   if (!body) throw new Error('No response body');
@@ -316,14 +351,19 @@ async function chatAnthropicStream(
   const decoder = new TextDecoder();
   let buffer = '';
   let finishReason: string | null = null;
+  const idleTimer = createIdleTimeout(IDLE_TIMEOUT_MS, () => reader.cancel());
 
   return {
     getFinishReason: () => finishReason,
     stream: new ReadableStream<string>({
+      start() {
+        idleTimer.start();
+      },
       async pull(controller) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
+            idleTimer.clear();
             // 处理 buffer 中残留的最后一段数据
             if (buffer.trim()) {
               const lines = buffer.split('\n');
@@ -346,6 +386,8 @@ async function chatAnthropicStream(
             controller.close();
             return;
           }
+          // 收到数据，重置闲置超时
+          idleTimer.touch();
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
@@ -361,6 +403,7 @@ async function chatAnthropicStream(
                 controller.enqueue(json.delta.text);
               }
               if (json.type === 'message_stop') {
+                idleTimer.clear();
                 controller.close();
                 return;
               }
@@ -371,6 +414,7 @@ async function chatAnthropicStream(
         }
       },
       cancel() {
+        idleTimer.clear();
         reader.cancel();
       },
     }),

@@ -106,7 +106,9 @@ export function streamJSONGeneration(options: StreamJSONGenerationOptions): Read
             console.error(`[${options.label}] Raw text (first 500):`, fullText.substring(0, 500));
             console.error(`[${options.label}] Raw text (last 500):`, fullText.substring(Math.max(0, fullText.length - 500)));
           }
-          const message = truncated ? 'AI 响应仍然过长，请缩小范围或减少上传资料后重试' : 'AI 响应解析失败，请重试';
+          const message = truncated
+            ? 'AI 响应不完整（可能生成超时或内容过长），请减少资料量后重试'
+            : 'AI 响应解析失败，请重试';
           sendSse(controller, 'error', { message });
           controller.close();
           return;
@@ -170,7 +172,7 @@ export function streamTextGeneration(options: StreamTextGenerationOptions): Read
             continue;
           }
 
-          const message = lengthLimited ? 'AI 响应仍然过长，请缩小范围后重试' : (err instanceof Error ? err.message : 'AI 响应生成失败');
+          const message = lengthLimited ? 'AI 响应不完整（可能生成超时或内容过长），请缩小范围后重试' : (err instanceof Error ? err.message : 'AI 响应生成失败');
           sendSse(controller, 'error', { message });
           controller.close();
           return;
